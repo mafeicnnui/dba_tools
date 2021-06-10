@@ -1,0 +1,52 @@
+echo `more /etc/sysconfig/network-scripts/ifcfg-eth0 | grep IPADDR | cut -c 8-20`>server_ip.txt
+echo `hostname`>server_name.txt
+echo `more /etc/redhat-release`>operation.txt
+
+create directory external_dir as '/home/oracle/external';
+grant read£¬write on directory external_dir to oclient;
+
+
+CREATE TABLE  server_ip
+ (name varchar2(20))
+ organization external (
+  type oracle_loader
+  default directory external_dir
+  access parameters (
+  records delimited by newline
+  nobadfile
+  nodiscardfile
+  nologfile
+  )
+  location('server_ip.txt')
+  )
+  reject limit unlimited;
+
+CREATE TABLE  server_name
+ (name varchar2(20))
+ organization external (
+  type oracle_loader
+  default directory external_dir
+  access parameters (
+  records delimited by newline
+  nobadfile
+  nodiscardfile
+  nologfile
+  )
+  location('server_name.txt')
+  )
+  reject limit unlimited;
+
+CREATE TABLE  operation
+ (name varchar2(100))
+ organization external (
+  type oracle_loader
+  default directory external_dir
+  access parameters (
+  records delimited by newline
+  nobadfile
+  nodiscardfile
+  nologfile
+  )
+  location('operation.txt')
+  )
+  reject limit unlimited;

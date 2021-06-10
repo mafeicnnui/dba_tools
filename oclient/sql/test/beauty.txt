@@ -1,0 +1,166 @@
+PL/SQL Developer Test script 3.0
+162
+declare 
+  v_sql varchar2(4000):='select  owner,object_type,object_name from dba_objects where owner=''SYS'' and object_type in(''TABLE'',''VIEW'') and object_name like ''%CON%'' order by owner,object_type,object_name' ;
+  n_select_end_pos int;
+  n_from_begin_pos int;
+  n_tab_begin_pos  int;
+  n_tab_end_pos    int;
+  n_ord_begin_pos  int;
+  n_ord_end_pos    int;
+  n_where_begin_pos  int:=0;
+  n_where_end_pos    int:=0;
+  n_grp_begin_pos    int:=0;
+  n_grp_end_pos      int:=0; 
+  
+  v_col_list     varchar2(2000);
+  v_col_values   varchar2(2000);
+  v_tab_values   varchar2(1000);
+  v_where_list     varchar2(2000);
+  v_where_values varchar2(1000);
+  v_ord_values   varchar2(1000);
+  v_grp_values   varchar2(1000);
+  v_sql_stat     varchar2(4000);
+  
+  function get_col_lists(v_col_str varchar2) return varchar2 is
+     type r_col_tab is table of varchar2(100) INDEX BY BINARY_INTEGER;  
+     v_col_tab r_col_tab;
+     v_tmp_str varchar2(4000):=v_col_str;
+     v_col_val varchar2(4000);
+     i_count int:=0;
+  begin
+     i_count:=0;
+     v_col_val:='';
+     while instr(v_tmp_str,',')>0 loop
+       v_col_tab(i_count):=substr(v_tmp_str,1,instr(v_tmp_str,',')-1);
+       v_tmp_str:=substr(v_tmp_str,instr(v_tmp_str,',')+1);
+       i_count:=i_count+1;
+     end loop;
+     v_col_tab(i_count):=v_tmp_str;
+    
+     for i in v_col_tab.first..v_col_tab.last loop 
+       v_col_tab(i):=replace(v_col_tab(i),chr(9));
+       v_col_tab(i):=replace(v_col_tab(i),chr(10));
+       v_col_tab(i):=replace(v_col_tab(i),chr(13));
+       v_col_tab(i):=trim(v_col_tab(i));
+       v_col_val:=v_col_val||lpad(' ',3,' ')||v_col_tab(i)||','||chr(10);
+     end loop;
+     v_col_val:=substr(v_col_val,1,length(v_col_val)-2)||chr(10);
+     return lower(v_col_val);    
+  end;
+  
+  function get_where_lists(v_col_str varchar2) return varchar2 is
+       type r_col_tab is table of varchar2(100) INDEX BY BINARY_INTEGER;  
+       v_col_tab r_col_tab;
+       v_col_val varchar2(4000);
+       v_tmp_str varchar2(4000):=v_col_str;
+       i_count int:=0;
+  begin
+     i_count:=0;
+     v_col_val:='';
+     while instr(upper(v_tmp_str),'AND')>0 loop
+       v_col_tab(i_count):=substr(upper(v_tmp_str),1,instr(upper(v_tmp_str),'AND')-1);
+       v_tmp_str:=substr(v_tmp_str,instr(upper(v_tmp_str),'AND')+3);
+       i_count:=i_count+1;
+     end loop;
+     v_col_tab(i_count):=v_tmp_str;
+     
+    -- dbms_output.put_line('----------------get_where_lists--------------');
+     for i in v_col_tab.first..v_col_tab.last loop 
+       v_col_tab(i):=replace(v_col_tab(i),chr(9));
+       v_col_tab(i):=replace(v_col_tab(i),chr(10));
+       v_col_tab(i):=replace(v_col_tab(i),chr(13));
+       v_col_tab(i):=trim(v_col_tab(i));
+       v_col_val:=v_col_val||' and '||v_col_tab(i)||chr(10);
+       --dbms_output.put_line(v_col_tab(i));
+     end loop;
+     --dbms_output.put_line('----------------get_where_lists--------------');
+     v_col_val:=substr(v_col_val,1,length(v_col_val)-1)||chr(10);
+     return substr(v_col_val,6);    
+ end;
+  
+begin
+  v_col_values:='';
+  if instr(upper(v_sql),'SELECT')=0 and  instr(upper(v_sql),'UPDATE')=0  and instr(upper(v_sql),'DELETE')=0 then
+     null;
+  else
+    if instr(upper(v_sql),'SELECT')>0 then
+        
+        n_select_end_pos:=instr(upper(v_sql),'SELECT')+6;
+        n_from_begin_pos:=instr(upper(v_sql),'FROM');
+        v_col_list:=trim(substr(v_sql,n_select_end_pos,n_from_begin_pos-n_select_end_pos));
+        if v_col_list!='*' then
+         v_col_values:=get_col_lists(v_col_list);
+        else
+          v_col_values:='*';
+        end if;
+        
+        if instr(upper(v_sql),'FROM')>0 then
+          n_tab_begin_pos:=n_from_begin_pos+4;
+          if instr(upper(v_sql),'WHERE')>0 then
+             n_tab_end_pos:=instr(upper(v_sql),'WHERE');
+          elsif instr(upper(v_sql),'GROUP BY')>0 then
+             n_tab_end_pos:=instr(upper(v_sql),'GROUP BY');   
+          elsif instr(upper(v_sql),'ORDER BY')>0 then
+             n_tab_end_pos:=instr(upper(v_sql),'ORDER BY');
+          else
+             n_tab_end_pos:=length(v_sql);
+          end if;
+          v_tab_values:=lower(' '||trim(substr(v_sql,n_tab_begin_pos,n_tab_end_pos-n_tab_begin_pos)));
+        end if;
+       
+         --dbms_output.put_line('v_col_values='||v_col_values);
+       
+        if instr(upper(v_sql),'WHERE')>0 then
+           n_where_begin_pos:=instr(upper(v_sql),'WHERE')+5;
+           if instr(upper(v_sql),'GROUP BY')>0 then
+             n_where_end_pos:=instr(upper(v_sql),'GROUP BY');
+           elsif instr(upper(v_sql),'ORDER BY')>0 then
+             n_where_end_pos:=instr(upper(v_sql),'ORDER BY');
+           else
+             n_where_end_pos:=length(v_sql);
+           end if;
+           
+           v_where_list:=substr(v_sql,n_where_begin_pos,n_where_end_pos-n_where_begin_pos);
+           v_where_values:=get_where_lists(v_where_list);
+        end if;
+        dbms_output.put_line('v_where_values='||v_where_values);
+        dbms_output.put_line('v_col_values='||v_col_values);
+         
+        
+        if instr(upper(v_sql),'GROUP BY')>0 then
+           n_grp_begin_pos:=instr(upper(v_sql),'GROUP BY')+8;
+           if instr(upper(v_sql),'ORDER BY')>0 then
+             n_grp_end_pos:=instr(upper(v_sql),'ORDER BY');
+           elsif instr(upper(v_sql),'HAVING')>0 then
+             n_grp_end_pos:=instr(upper(v_sql),'HAVING');
+           else
+             n_grp_end_pos:=length(v_sql);
+           end if;
+           v_grp_values:=lower(' '||trim(substr(v_sql,n_grp_begin_pos,n_grp_end_pos-n_grp_begin_pos)));
+        end if;
+                
+        if instr(upper(v_sql),'ORDER BY')>0 then
+           n_ord_begin_pos:=instr(upper(upper(v_sql)),'ORDER BY')+8;
+           n_ord_end_pos:=length(v_sql);
+           v_ord_values:=lower(' '||trim(substr(v_sql,n_ord_begin_pos,n_ord_end_pos-n_ord_begin_pos)));
+        end if;        
+    end if;       
+   end if; 
+   
+   v_sql_stat:='SELECT'||chr(10)||v_col_values||'FROM '||v_tab_values||chr(10);
+               
+   if instr(upper(v_sql),'WHERE')>0 then 
+       v_sql_stat:=v_sql_stat||'WHERE '||v_where_values;
+   end if;   
+   if instr(upper(v_sql),'GROUP BY')>0 then 
+       v_sql_stat:=v_sql_stat||'GROUP BY '||v_grp_values||chr(10);
+   end if;   
+   if instr(upper(v_sql),'ORDER BY')>0 then 
+       v_sql_stat:=v_sql_stat||'ORDER BY '||v_ord_values||chr(10);
+   end if;  
+   dbms_output.put_line(v_sql_stat);
+    
+end;
+0
+0
