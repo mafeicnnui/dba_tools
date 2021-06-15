@@ -44,7 +44,7 @@ def get_event_name(event):
        return ''.ljust(30,' ')
 
 MYSQL_SETTINGS = {
-    "host"  : "10.2.39.17",
+    "host"  : "10.2.39.240",
     "port"  : 3317,
     "user"  : "puppet",
     "passwd": "Puppet@123",
@@ -52,11 +52,11 @@ MYSQL_SETTINGS = {
 }
 
 MYSQL_SYNC_SETTINGS = {
-    "host"  : "10.2.39.17",
-    "port"  : 3317,
+    "host"  : "10.2.39.18",
+    "port"  : 3306,
     "user"  : "puppet",
     "passwd": "Puppet@123",
-    "db"    : "test_sync"
+    "db"    : "sync"
 }
 
 
@@ -129,8 +129,8 @@ def main():
         try:
             file,pos=get_master_pos()
             stream = BinLogStreamReader( connection_settings = MYSQL_SETTINGS,
-                                         server_id     = 8,
-                                         blocking      = True,
+                                         server_id   = 8,
+                                         blocking     = True,
                                          resume_stream = True,
                                          log_file = file,
                                          log_pos  = int(pos)
