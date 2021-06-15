@@ -6,7 +6,8 @@
 # pip install mysql-replication
 # @Software: PyCharm
 
-import json,datetime,time,sys
+import traceback
+import json,sys
 import pymysql
 from pymysqlreplication import BinLogStreamReader
 from pymysqlreplication.row_event import (
@@ -53,14 +54,6 @@ MYSQL_SETTINGS = {
     "db"    : "test"
 }
 
-MYSQL_SYNC_SETTINGS = {
-    "host"  : "10.2.39.18",
-    "port"  : 3306,
-    "user"  : "puppet",
-    "passwd": "Puppet@123",
-    "db"    : "sync"
-}
-
 def get_master_pos(file=None,pos=None):
     db = get_db(MYSQL_SETTINGS)
     cr = db.cursor()
@@ -82,7 +75,7 @@ def format_sql(v_sql):
     return v_sql.replace("\\","\\\\").replace("'","\\'")
 
 def get_ins_header(event):
-    v_ddl = 'insert into {0}.{1} ('.format(MYSQL_SYNC_SETTINGS['db'],event['table'])
+    v_ddl = 'insert into {0}.{1} ('.format(MYSQL_SETTINGS['db'],event['table'])
     for key in event['data']:
         v_ddl = v_ddl + '`{0}`'.format(key) + ','
     v_ddl = v_ddl[0:-1] + ')'
@@ -112,17 +105,22 @@ def set_column(p_data):
 
 
 def gen_sql(event):
+    #print('-------------------------------------------------------------------------------------------------------')
+    #print('event = ',event)
     if event['action']=='insert':
-        sql = get_ins_header(event)+ ' values ('+get_ins_values(event)+')'
+        sql  = get_ins_header(event)+ ' values ('+get_ins_values(event)+')'
+        rsql = "delete from {0}.{1} {2}'".format(MYSQL_SETTINGS['db'],event['table'],get_where(event['data']))
     elif event['action']=='update':
-        sql = 'update {0}.{1} {2} {3}'.\
-             format(MYSQL_SYNC_SETTINGS['db'],event['table'],set_column(event['after_values']),get_where(event['before_values']))
+        sql  = 'update {0}.{1} {2} {3}'.\
+               format(MYSQL_SETTINGS['db'],event['table'],set_column(event['after_values']),get_where(event['before_values']))
+        rsql = 'update {0}.{1} {2} {3}'.\
+               format(MYSQL_SETTINGS['db'],event['table'],set_column(event['before_values']),get_where(event['after_values']))
     elif event['action']=='delete':
-        sql = 'delete from {0}.{1} {2}'.\
-             format(MYSQL_SYNC_SETTINGS['db'],event['table'],get_where(event['data']))
+        sql  = 'delete from {0}.{1} {2}'.format(MYSQL_SETTINGS['db'],event['table'],get_where(event['data']))
+        rsql = get_ins_header(event)+ ' values ('+get_ins_values(event)+')'
     else:
        pass
-    return sql
+    return sql,rsql
 
 
 def get_binlog(p_file,p_db,p_tab,p_start_pos,p_end_pos):
@@ -141,64 +139,57 @@ def get_binlog(p_file,p_db,p_tab,p_start_pos,p_end_pos):
         schema = MYSQL_SETTINGS['db']
 
         for binlogevent in stream:
-            print('stream.log_file,stream.log_pos=', stream.log_file, stream.log_pos)
-
-            if stream.log_pos >= p_end_pos:
-                stream.close()
-                sys.exit(0)
+            #print('stream.log_file,stream.log_pos=', stream.log_file, stream.log_pos)
+            #print('binlogevent=',binlogevent.dump())
+            print('binlogeven=', binlogevent.event_type,binlogevent.packet.log_pos)
 
             if binlogevent.event_type in (2,):
-
                 event = {"schema": bytes.decode(binlogevent.schema), "query": binlogevent.query.lower()}
-
-                if 'create' in event['query'] or 'drop' in event['query'] \
-                        or 'alter' in event['query'] or 'truncate' in event['query']:
-
+                if 'create' in event['query'] or 'drop' in event['query']  or 'alter' in event['query'] or 'truncate' in event['query']:
                     if event['schema'] == schema:
                         print(binlogevent.query.lower())
 
-
             if binlogevent.event_type in (30, 31, 32):
-                # print('binlogevent=',binlogevent.dump())
-                print('binlogevent.packet.log_pos=', binlogevent.packet.log_pos)
-
                 for row in binlogevent.rows:
-                    # print('binlogevent.packet.log_pos=', binlogevent.packet.log_pos)
-                    # print('stream.log_file,stream.log_pos=', stream.log_file, stream.log_pos)
-
                     event = {"schema": binlogevent.schema, "table": binlogevent.table}
 
                     if event['schema'] == schema:
-
                         if isinstance(binlogevent, DeleteRowsEvent):
                             event["action"] = "delete"
                             event["data"] = row["values"]
-                            print('delete=', gen_sql(event), event)
+                            sql,rsql = gen_sql(event)
 
                         elif isinstance(binlogevent, UpdateRowsEvent):
                             event["action"] = "update"
                             event["after_values"] = row["after_values"]
                             event["before_values"] = row["before_values"]
-                            print('update=', gen_sql(event), event)
+                            sql, rsql = gen_sql(event)
 
                         elif isinstance(binlogevent, WriteRowsEvent):
                             event["action"] = "insert"
                             event["data"] = row["values"]
-                            print('insert=', gen_sql(event), event)
+                            sql,rsql = gen_sql(event)
 
+                        print('Execute :',sql)
+                        print('Rollback :',rsql)
                         # print(get_event_name(binlogevent.event_type),json.dumps(event, cls=DateEncoder))
                         # print(json.dumps(event))
+
+            if stream.log_pos + 31 == p_end_pos:
+                stream.close()
+                sys.exit(0)
 
 
 
     except Exception as e:
-        print(str(e))
+        traceback.print_exc()
     finally:
         stream.close()
 
-def exec_sql(p_db,p_tab,p_sql):
+def exec_sql(p_db,p_sql):
     db = get_db(MYSQL_SETTINGS)
     cr = db.cursor()
+
     # 1.获取 file,start_pos
     cr.execute('FLUSH /*!40101 LOCAL */ TABLES')
     cr.execute('FLUSH TABLES WITH READ LOCK')
@@ -209,31 +200,25 @@ def exec_sql(p_db,p_tab,p_sql):
     cr.execute('unlock tables')
 
     # 2.执行SQL语句
-    print('use {}'.format(p_db))
     cr.execute('use {}'.format(p_db))
-    print('lock tables {} write'.format(p_tab))
-    cr.execute('lock tables {} write'.format(p_tab))
-    print(p_sql)
     cr.execute(p_sql)
 
     # 3.获取 stop_position
     cr.execute('show master status')
     rs = cr.fetchone()
     stop_pos = rs[1]
-    cr.execute('unlock tables')
 
     return file,start_pos,stop_pos
-
-
 
 def main():
     db = 'test'
     tab ='xs'
-    sql = """update xs set `name`='liuluoquo2' where xh=2"""
-    file,start_pos,stop_pos = exec_sql(db,tab,sql)
+    #sql ="insert into xs(name) values('rr'),('gg2'),('zz3')"
+    #sql = "delete from xs where xh in(19)"
+    sql="update xs set name=concat(name,'123') where xh = 24"
+    file,start_pos,stop_pos = exec_sql(db,sql)
     print('parameter:',db,tab,file,start_pos,stop_pos)
-
-    get_binlog(file, db, tab, start_pos, stop_pos)
+    get_binlog(file, db,tab, start_pos, stop_pos)
 
 if __name__ == "__main__":
-    main()
+     main()

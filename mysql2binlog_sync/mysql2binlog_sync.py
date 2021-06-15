@@ -45,17 +45,17 @@ def get_event_name(event):
 
 MYSQL_SETTINGS = {
     "host"  : "10.2.39.240",
-    "port"  : 3317,
-    "user"  : "puppet",
-    "passwd": "Puppet@123",
+    "port"  : 3306,
+    "user"  : "canal",
+    "passwd": "canal@Hopson2020",
     "db"    : "test"
 }
 
 MYSQL_SYNC_SETTINGS = {
-    "host"  : "10.2.39.18",
+     "host"  : "10.2.39.240",
     "port"  : 3306,
-    "user"  : "puppet",
-    "passwd": "Puppet@123",
+    "user"  : "canal",
+    "passwd": "canal@Hopson2020",
     "db"    : "sync"
 }
 
@@ -99,13 +99,13 @@ def get_ins_values(event):
 def get_where(p_where):
     v_where = ' where '
     for key in p_where:
-        v_where = v_where+ key+' = '+str(p_where[key]) + ' and '
+        v_where = v_where+ """`{}`='{}' and """.format(key,str(p_where[key]))
     return v_where[0:-5]
 
 def set_column(p_data):
     v_set = ' set '
     for key in p_data:
-        v_set = v_set + key + '=' + str(p_data[key]) + ','
+        v_set = v_set +"""`{}`='{}',""".format(key,str(p_data[key]))
     return v_set[0:-1]
 
 def gen_sql(event):
@@ -142,7 +142,8 @@ def main():
                 cr     = db.cursor()
 
                 for binlogevent in stream:
-                    print('binlogevent.event_type=',binlogevent.event_type)
+                    print('binlogeven=', binlogevent.event_type,binlogevent.packet.log_pos)
+
                     if binlogevent.event_type in (2,):
                         event = {"schema": bytes.decode(binlogevent.schema), "query": binlogevent.query.lower()}
                         #print('event1=>',event)
