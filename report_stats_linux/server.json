@@ -130,7 +130,7 @@
         "db_servers":[
             {
                 "server_id":141,
-                "db_id":135
+                "db_id":157
             }
         ],
         "app_servers":[
@@ -148,6 +148,48 @@
             },
             {
                 "server_id":140,
+                "db_id":""
+            }
+        ]
+    },
+    {
+        "name":"合约系统",
+        "db_servers":[
+            {
+                "server_id":148,
+                "db_id":172
+            },
+            {
+                "server_id":150,
+                "db_id":173
+            }
+        ],
+        "app_servers":[
+            {
+                "server_id":152,
+                "db_id":""
+            },
+            {
+                "server_id":155,
+                "db_id":""
+            }
+        ]
+    },
+    {
+        "name":"预算系统",
+        "db_servers":[
+        ],
+        "app_servers":[
+            {
+                "server_id":157,
+                "db_id":""
+            },
+            {
+                "server_id":159,
+                "db_id":""
+            },
+            {
+                "server_id":162,
                 "db_id":""
             }
         ]

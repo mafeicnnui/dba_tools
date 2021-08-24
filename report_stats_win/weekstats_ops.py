@@ -11,9 +11,10 @@ import base64
 import json
 from pyecharts.charts import Bar
 from pyecharts.charts import Line
-from pyecharts.render import make_snapshot
 from pyecharts import options as opts
 from snapshot_phantomjs import snapshot
+# from snapshot_selenium import snapshot
+from pyecharts.render import make_snapshot
 from pyecharts.globals import ThemeType
 
 from docx import Document

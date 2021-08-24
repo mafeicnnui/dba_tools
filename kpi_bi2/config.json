@@ -1,0 +1,11 @@
+{
+    "db_ip"        : "10.2.39.17",
+    "db_port"      : "23306",
+    "db_user"      : "puppet",
+    "db_pass"      : "Puppet@123",
+    "db_service"   : "puppet",
+    "db_charset"   : "utf8",
+    "month"        : "2021-07",
+    "begin_date"   : "2021-07-01",
+    "end_date"     : "2021-07-31 23:59:59"
+}

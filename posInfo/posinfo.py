@@ -12,6 +12,7 @@ from   dateutil import parser
 import base64
 import pymongo
 import datetime
+import json
 
 
 '''
@@ -148,8 +149,21 @@ def get_ticket_status(errcode):
   功能：获取小票图片提取结果,返回提取状态和结果
 '''
 def get_ticket_image(cfg):
-    url         = '{}?marketId={}&posId={}&ticketNo={}&type=1'.format(cfg['interface_get_image_result'],cfg['marketId'],cfg['posId'],cfg['ticketNo'])
-    response    = requests.post(url)
+    url = '{}?marketId={}&posId={}&ticketNo={}&type=1'.format(cfg['interface_get_image_result'],cfg['marketId'],cfg['posId'],cfg['ticketNo'])
+    print('url=',url)
+    # payload  = {
+    #               'marketId':cfg['marketId'],
+    #               'posId'   :cfg['posId'],
+    #               'ticketNo':cfg['ticketNo']
+    #             }
+    # headers     = { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36",
+    #                 "content-type": 'application/json',
+    #                 "Accept":'*/*',
+    #                "Accept-Encoding":'gzip, deflate, br',
+    #                "Connection":'keep-alive'}
+    response = requests.get(url)
+    # response    = requests.get(url,headers=headers)
+    #response = requests.post(cfg['interface_get_image_result'], data=json.dumps(payload), headers=headers)
     print('get_ticket_image=>response=', response)
     print('get_ticket_image=>response.text=',response.text)
     errorCode   = response.text.replace('{','').replace('}','').split(',')[0].split('errorCode')[1][1:]

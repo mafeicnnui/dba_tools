@@ -516,6 +516,27 @@ def get_disk_usage(cfg,item,x_data,y_data):
 
     return line
 
+# def get_disk_usage_bar(cfg,item,x_data,y_data):
+#     line = Bar(init_opts=opts.InitOpts(theme=cfg['theme_type'],width=cfg['img_width'],height=cfg['img_height']))
+#     line.set_global_opts(
+#             tooltip_opts=opts.TooltipOpts(is_show=False),
+#             xaxis_opts=opts.AxisOpts(
+#                 axislabel_opts=opts.LabelOpts(rotate=-15)
+#              ),
+#             yaxis_opts=opts.AxisOpts(
+#                 type_="value",
+#              ),
+#             )
+#     line.set_series_opts(
+#             areastyle_opts=opts.AreaStyleOpts(opacity=0.5),
+#             label_opts=opts.LabelOpts(is_show=False),
+#            )
+#
+#     line.add_xaxis(xaxis_data=x_data)
+#     line.add_yaxis(series_name=item['item_desc'],yaxis_data=y_data, gap="1%")
+#     return line
+
+
 def get_disk_usage_bar(cfg,item,x_data,y_data):
     line = Bar(init_opts=opts.InitOpts(theme=cfg['theme_type'],width=cfg['img_width'],height=cfg['img_height']))
     line.set_global_opts(
@@ -1003,11 +1024,11 @@ def stats():
     xh     =  1
     doc    =  write_digest_header(doc,xh)
     doc    =  write_doc_digest(cfg,doc)
-    # xh     =  2
-    # for svr in server:
-    #     print(json.dumps(svr, ensure_ascii=False, indent=4, separators=(',', ':')))
-    #     doc = write_server(cfg,svr,doc,xh)
-    #     xh = xh + 1
+    xh     =  2
+    for svr in server:
+        print(json.dumps(svr, ensure_ascii=False, indent=4, separators=(',', ':')))
+        doc = write_server(cfg,svr,doc,xh)
+        xh = xh + 1
     doc = set_doc_paragraph(cfg,doc)
     doc.save('商管运行周报_{}.docx'.format(cfg['end_date']))
 

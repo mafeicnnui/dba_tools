@@ -180,17 +180,20 @@ def get_html_contents(p_dbd):
     return v_html
 
 def get_month(p_month):
-    return get_first_day(p_month)[0:7]
+    #return get_first_day(p_month)[0:7]
+    return '2021-06'
 
 def get_first_day_year():
     now = datetime.date.today()
     return datetime.datetime(now.year, 4, 1).strftime("%Y-%m-%d")
 
 def get_first_day(p_month):
-    return getFirstAndLastDay(p_month)[0]
+    #return getFirstAndLastDay(p_month)[0]
+    return '2021-06-01'
 
 def get_last_day(p_month):
-    return getFirstAndLastDay(p_month)[1]+' 23:59:59'
+    #return getFirstAndLastDay(p_month)[1]+' 23:59:59'
+    return '2021-06-15 23:59:59'
 
 def get_bbrq():
     return datetime.datetime.now().strftime("%Y-%m-%d")
@@ -284,7 +287,7 @@ def get_bbtj_sql(p_db):
     return rs
 
 def get_bbtj_sql_hst(p_db):
-    st ="""select * from kpi_item_sql where item_type='2' order by item_code"""
+    st ="""select * from kpi_item_sql where item_type='2' and status='1' order by item_code"""
     cr = p_db.cursor()
     cr.execute(st)
     rs = cr.fetchall()
@@ -512,67 +515,67 @@ if __name__ == '__main__':
     print('-------------------------------------------')
 
     # 生成各项目统计数据
-    for market in get_markets(dbd,'N'):
-        bb = get_bbtj_sql(dbd)
-        print("Calculating project {}...".format(market['market_name']))
-        for b in bb:
-            if b['if_stat'] == 'Y':
-                b['statement'] = b['statement'].replace('$$BBRQQ$$',bbrqq).replace('$$BBRQZ$$',bbrqz).replace('$$MARKET_ID$$',str(market['market_id']))
-                b['statement_sum'] = b['statement_sum'].replace('$$BBRQQ$$', bbrqq).replace('$$BBRQZ$$', bbrqz).replace('$$MARKET_ID$$', str(market['market_id']))
-            b['value'],b['value_sum']  = get_value(dbd,b['ds_id'],b['statement'],b['statement_sum'])
-            b['market_id'] = market['market_id']
-            b['market_name'] = market['market_name']
-
-        # 写日志
-        write_log(dbd,bb)
-
-    # 生成区域汇总数据
-    for market in get_markets(dbd, 'Y'):
-        bb = get_bbtj_sql(dbd)
-        print("Calculating region {}...".format(market['market_name']))
-        for b in bb:
-            if b['if_stat'] == 'Y':
-                b['statement'] = b['statement'].replace('$$BBRQQ$$', bbrqq)\
-                                               .replace('$$BBRQZ$$', bbrqz)\
-                                               .replace('$$MARKET_ID$$', market['summary_formula'])
-                b['statement_sum'] = b['statement_sum'].replace('$$BBRQQ$$', bbrqq)\
-                                                       .replace('$$BBRQZ$$', bbrqz)\
-                                                       .replace('$$MARKET_ID$$', market['summary_formula'])
-            b['value'], b['value_sum'] = get_value(dbd, b['ds_id'], b['statement'], b['statement_sum'])
-            b['market_id'] = market['market_id']
-            b['market_name'] = market['market_name']
-
-        # 写日志
-        write_log(dbd,bb)
-
-    # 生成总部汇总数据
-    for market in get_markets(dbd, 'HST'):
-        bb = get_bbtj_sql_hst(dbd)
-        print("Calculating hst {}...".format(market['market_name']))
-        for b in bb:
-            if b['if_stat'] == 'Y':
-                b['statement'] = b['statement'].replace('$$BBRQQ$$', bbrqq).replace('$$BBRQZ$$', bbrqz)
-                b['statement_sum'] = b['statement_sum'].replace('$$BBRQQ$$', bbrqq).replace('$$BBRQZ$$', bbrqz)
-            b['value'], b['value_sum'] = get_value(dbd, b['ds_id'], b['statement'], b['statement_sum'])
-            b['market_id'] = market['market_id']
-            b['market_name'] = market['market_name']
-
-        # 写日志
-        write_log(dbd, bb)
-
-    # 更新合计项
-    update_log(dbd)
-
-    # 更新 kpi_po_hz
-    update_hz(dbd)
+    # for market in get_markets(dbd,'N'):
+    #     bb = get_bbtj_sql(dbd)
+    #     print("Calculating project {}...".format(market['market_name']))
+    #     for b in bb:
+    #         if b['if_stat'] == 'Y':
+    #             b['statement'] = b['statement'].replace('$$BBRQQ$$',bbrqq).replace('$$BBRQZ$$',bbrqz).replace('$$MARKET_ID$$',str(market['market_id']))
+    #             b['statement_sum'] = b['statement_sum'].replace('$$BBRQQ$$', bbrqq).replace('$$BBRQZ$$', bbrqz).replace('$$MARKET_ID$$', str(market['market_id']))
+    #         b['value'],b['value_sum']  = get_value(dbd,b['ds_id'],b['statement'],b['statement_sum'])
+    #         b['market_id'] = market['market_id']
+    #         b['market_name'] = market['market_name']
+    #
+    #     # 写日志
+    #     write_log(dbd,bb)
+    #
+    # # 生成区域汇总数据
+    # for market in get_markets(dbd, 'Y'):
+    #     bb = get_bbtj_sql(dbd)
+    #     print("Calculating region {}...".format(market['market_name']))
+    #     for b in bb:
+    #         if b['if_stat'] == 'Y':
+    #             b['statement'] = b['statement'].replace('$$BBRQQ$$', bbrqq)\
+    #                                            .replace('$$BBRQZ$$', bbrqz)\
+    #                                            .replace('$$MARKET_ID$$', market['summary_formula'])
+    #             b['statement_sum'] = b['statement_sum'].replace('$$BBRQQ$$', bbrqq)\
+    #                                                    .replace('$$BBRQZ$$', bbrqz)\
+    #                                                    .replace('$$MARKET_ID$$', market['summary_formula'])
+    #         b['value'], b['value_sum'] = get_value(dbd, b['ds_id'], b['statement'], b['statement_sum'])
+    #         b['market_id'] = market['market_id']
+    #         b['market_name'] = market['market_name']
+    #
+    #     # 写日志
+    #     write_log(dbd,bb)
+    #
+    # # 生成总部汇总数据
+    # for market in get_markets(dbd, 'HST'):
+    #     bb = get_bbtj_sql_hst(dbd)
+    #     print("Calculating hst {}...".format(market['market_name']))
+    #     for b in bb:
+    #         if b['if_stat'] == 'Y':
+    #             b['statement'] = b['statement'].replace('$$BBRQQ$$', bbrqq).replace('$$BBRQZ$$', bbrqz)
+    #             b['statement_sum'] = b['statement_sum'].replace('$$BBRQQ$$', bbrqq).replace('$$BBRQZ$$', bbrqz)
+    #         b['value'], b['value_sum'] = get_value(dbd, b['ds_id'], b['statement'], b['statement_sum'])
+    #         b['market_id'] = market['market_id']
+    #         b['market_name'] = market['market_name']
+    #
+    #     # 写日志
+    #     write_log(dbd, bb)
+    #
+    # # 更新合计项
+    # update_log(dbd)
+    #
+    # # 更新 kpi_po_hz
+    # update_hz(dbd)
 
     # 生成HTML
     v_title = '商管BI-KPI统计情况表-{}'.format(get_bbrq())
     v_content = get_html_contents(dbd)
 
     # 发送邮件
-    send_mail25('190343@lifeat.cn', 'Hhc5HBtAuYTPGHQ8', '190343@lifeat.cn', v_title, v_content)
-    # send_mail25('190343@lifeat.cn', 'Hhc5HBtAuYTPGHQ8','190343@lifeat.cn,190634@lifeat.cn,807216@lifeat.cn',v_title, v_content)
+    #send_mail25('190343@lifeat.cn', 'R86hyfjobMBYR76h', '190343@lifeat.cn', v_title, v_content)
+    send_mail25('190343@lifeat.cn', 'R86hyfjobMBYR76h','190343@lifeat.cn,190634@lifeat.cn,807216@lifeat.cn',v_title, v_content)
 
     # 释放连接
     db.close()

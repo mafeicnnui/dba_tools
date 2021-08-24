@@ -10,13 +10,29 @@ import traceback
 import json,sys
 import pymysql
 from pymysqlreplication import BinLogStreamReader
+from pymysqlreplication.event import *
 from pymysqlreplication.row_event import (
      DeleteRowsEvent,
      UpdateRowsEvent,
-     WriteRowsEvent
+     WriteRowsEvent,
 )
 
-from pymysqlreplication.event import *
+# MYSQL_SETTINGS = {
+#     "host"  : "10.2.39.240",
+#     "port"  : 3306,
+#     "user"  : "canal",
+#     "passwd": "canal@Hopson2020",
+#     "db"    : "test"
+# }
+
+MYSQL_SETTINGS = {
+   # "host"  : "10.2.39.40",
+    "host"  : "rm-2ze9y75wip0929gy86o.mysql.rds.aliyuncs.com",
+    "port"  : 3306,
+    "user"  : "canal2021",
+    "passwd": "canal@Hopson2018",
+    "db"    : ""
+}
 
 class DateEncoder(json.JSONEncoder):
     '''
@@ -44,15 +60,6 @@ def get_event_name(event):
        return 'DeleteRowsEvent'.ljust(20,' ')+':'
     else:
        return ''.ljust(30,' ')
-
-
-MYSQL_SETTINGS = {
-    "host"  : "10.2.39.240",
-    "port"  : 3306,
-    "user"  : "canal",
-    "passwd": "canal@Hopson2020",
-    "db"    : "test"
-}
 
 def get_master_pos(file=None,pos=None):
     db = get_db(MYSQL_SETTINGS)
@@ -96,20 +103,16 @@ def get_where(p_where):
         v_where = v_where+ key+' = \''+str(p_where[key]) + '\' and '
     return v_where[0:-5]
 
-
 def set_column(p_data):
     v_set = ' set '
     for key in p_data:
         v_set = v_set + key + '=\''+ str(p_data[key]) + '\','
     return v_set[0:-1]
 
-
 def gen_sql(event):
-    #print('-------------------------------------------------------------------------------------------------------')
-    #print('event = ',event)
     if event['action']=='insert':
         sql  = get_ins_header(event)+ ' values ('+get_ins_values(event)+')'
-        rsql = "delete from {0}.{1} {2}'".format(MYSQL_SETTINGS['db'],event['table'],get_where(event['data']))
+        rsql = "delete from {0}.{1} {2}".format(MYSQL_SETTINGS['db'],event['table'],get_where(event['data']))
     elif event['action']=='update':
         sql  = 'update {0}.{1} {2} {3}'.\
                format(MYSQL_SETTINGS['db'],event['table'],set_column(event['after_values']),get_where(event['before_values']))
@@ -122,14 +125,12 @@ def gen_sql(event):
        pass
     return sql,rsql
 
-
 def get_binlog(p_file,p_db,p_tab,p_start_pos,p_end_pos):
+    rollback_statments = []
     try:
         stream = BinLogStreamReader(connection_settings=MYSQL_SETTINGS,
-                                    only_schemas=[p_db],
-                                    only_tables=[p_tab],
-                                    only_events=(QueryEvent, DeleteRowsEvent, UpdateRowsEvent, WriteRowsEvent),
-                                    server_id=8,
+                                    #only_events=(QueryEvent, DeleteRowsEvent, UpdateRowsEvent, WriteRowsEvent),
+                                    server_id=100,
                                     blocking=True,
                                     resume_stream=True,
                                     log_file=p_file,
@@ -140,46 +141,62 @@ def get_binlog(p_file,p_db,p_tab,p_start_pos,p_end_pos):
 
         for binlogevent in stream:
             #print('stream.log_file,stream.log_pos=', stream.log_file, stream.log_pos)
-            #print('binlogevent=',binlogevent.dump())
-            print('binlogeven=', binlogevent.event_type,binlogevent.packet.log_pos)
-
+            print('binlogevent=',binlogevent.dump())
+            #print('binlogeven=', binlogevent.event_type,binlogevent.packet.log_pos)
+            #
             if binlogevent.event_type in (2,):
                 event = {"schema": bytes.decode(binlogevent.schema), "query": binlogevent.query.lower()}
                 if 'create' in event['query'] or 'drop' in event['query']  or 'alter' in event['query'] or 'truncate' in event['query']:
                     if event['schema'] == schema:
                         print(binlogevent.query.lower())
 
-            if binlogevent.event_type in (30, 31, 32):
+            # if binlogevent.event_type in (30, 31, 32):
+            if isinstance(binlogevent, DeleteRowsEvent) or isinstance(binlogevent, UpdateRowsEvent) or isinstance(binlogevent, WriteRowsEvent):
                 for row in binlogevent.rows:
                     event = {"schema": binlogevent.schema, "table": binlogevent.table}
 
-                    if event['schema'] == schema:
-                        if isinstance(binlogevent, DeleteRowsEvent):
-                            event["action"] = "delete"
-                            event["data"] = row["values"]
-                            sql,rsql = gen_sql(event)
+                    #if event['schema'] == schema:
+                    if isinstance(binlogevent, DeleteRowsEvent):
+                        event["action"] = "delete"
+                        event["data"] = row["values"]
+                        sql,rsql = gen_sql(event)
+                        print('Execute :', sql)
+                        print('Rollback :', rsql)
+                        rollback_statments.append(rsql)
 
-                        elif isinstance(binlogevent, UpdateRowsEvent):
-                            event["action"] = "update"
-                            event["after_values"] = row["after_values"]
-                            event["before_values"] = row["before_values"]
-                            sql, rsql = gen_sql(event)
+                    elif isinstance(binlogevent, UpdateRowsEvent):
+                        event["action"] = "update"
+                        event["after_values"] = row["after_values"]
+                        event["before_values"] = row["before_values"]
+                        sql, rsql = gen_sql(event)
+                        print('Execute :', sql)
+                        print('Rollback :', rsql)
+                        rollback_statments.append(rsql)
 
-                        elif isinstance(binlogevent, WriteRowsEvent):
-                            event["action"] = "insert"
-                            event["data"] = row["values"]
-                            sql,rsql = gen_sql(event)
-
+                    elif isinstance(binlogevent, WriteRowsEvent):
+                        event["action"] = "insert"
+                        event["data"] = row["values"]
+                        sql,rsql = gen_sql(event)
                         print('Execute :',sql)
                         print('Rollback :',rsql)
                         # print(get_event_name(binlogevent.event_type),json.dumps(event, cls=DateEncoder))
                         # print(json.dumps(event))
+                        rollback_statments.append(rsql)
 
-            if stream.log_pos + 31 == p_end_pos:
+            if  stream.log_pos >= p_end_pos:
+                print('rollback_statements:', rollback_statments[::-1])
                 stream.close()
-                sys.exit(0)
+                # sys.exit(0)
+                break
 
+            if stream.log_pos + 31 == p_end_pos or stream.log_pos >=p_end_pos:
+                print('rollback_statements:', rollback_statments[::-1])
+                stream.close()
+                #sys.exit(0)
+                break
 
+        print('xxxxxxxxxxxxx')
+        return rollback_statments[::-1]
 
     except Exception as e:
         traceback.print_exc()
@@ -211,14 +228,22 @@ def exec_sql(p_db,p_sql):
     return file,start_pos,stop_pos
 
 def main():
-    db = 'test'
-    tab ='xs'
-    #sql ="insert into xs(name) values('rr'),('gg2'),('zz3')"
-    #sql = "delete from xs where xh in(19)"
-    sql="update xs set name=concat(name,'123') where xh = 24"
-    file,start_pos,stop_pos = exec_sql(db,sql)
-    print('parameter:',db,tab,file,start_pos,stop_pos)
-    get_binlog(file, db,tab, start_pos, stop_pos)
+    # db = 'test'
+    # tab ='xs'
+    # #sql ="insert into xs(name) values('rr'),('gg2'),('zz3')"
+    # #sql = "delete from xs where xh in(19)"
+    # sql="update xs set name=concat(name,'123') where xh in(20,21,22,23,24)"
+    # file,start_pos,stop_pos = exec_sql(db,sql)
+    # print('parameter:',db,tab,file,start_pos,stop_pos)
+
+    file = 'mysql-bin.000723'
+    db='test'
+    tab='xs_demo',
+    start_pos=150515471
+    stop_pos=150517431
+
+    st = get_binlog(file, db,tab, start_pos, stop_pos)
+    print('st=',st)
 
 if __name__ == "__main__":
      main()

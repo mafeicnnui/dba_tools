@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>查询用户</title>
+    <link href="{{static_url('css/bootstrap.min.css')}}" rel="stylesheet" type="text/css" />
+    <link href="{{static_url('css/jquery.dataTables.min.css')}}" rel="stylesheet" type="text/css"/>
+
+</head>
+<body>
+    <p></p>
+    <label>用户：</label>
+    <input type="text"  id="name" >
+    <label>性别：</label>
+    <select id="gender">
+        <option value='' selected = "selected">请选择</option>
+        {% for var in genders %}
+           <option value={{var[0]}} >{{var[1]}}</option>
+        {% end %}
+    </select>
+   <input type="button" id='query' value="查询">
+
+   <p></p>
+   <table id="example" class="table table-striped table-bordered dt-responsive nowrap" cellspacing="0"  ></table>
+
+</body>
+<script src="{{static_url('js/jquery-2.2.4.min.js')}}"></script>
+<script src="{{static_url('js/bootstrap.min.js')}}"></script>
+<script src="{{static_url('js/jquery.dataTables.min.js')}}"></script>
+
+<script>
+     $(document).ready(function() {
+         $("#query").click(function() {
+              $.ajax({
+                url: "/user/query",
+                type: "post",
+                datatype: "json",
+                data: {
+                    name: $('#name').val(),
+                    gender:  $('#gender').val(),
+                },
+                success: function (dataSet) {
+                    console.log(dataSet)
+                    $('#example').DataTable( {
+                      "stripeClasses": [ 'cell-border', 'cell-border', 'cell-border' ],
+                      "dom"      : '<"top"<"clear">>rt<"bottom"ip<"clear">>',
+                      destroy    :true,
+                      async      :true,
+                      ordering   :false,
+                      scrollY    :true,
+                      scrollX    :true,
+                      scrollCollapse: true,
+                      paging:     true,
+                      iDisplayLength: 10,
+                      data: dataSet.msg,
+                      columns: [
+                        { "title": "姓名","width":"100px" },
+                        { "title": "年龄","width":"100px" },
+                        { "title": "性别","width":"80px" },
+                     ],
+                     "language": {
+                             "search"       : "在表格中搜索:",
+                             "sProcessing"  : "处理中...",
+                             "sLengthMenu"  : "显示 _MENU_ 项结果",
+                             "sZeroRecords" : "没有匹配结果",
+                             "sInfo"        : "显示第 _START_ 至 _END_ 项结果，共 _TOTAL_ 项",
+                             "sInfoEmpty"   : "显示第 0 至 0 项结果，共 0 项",
+                             "sInfoFiltered": "(由 _MAX_ 项结果过滤)",
+                             "sInfoPostFix" : "",
+                             "sSearch"      : "搜索:",
+                             "sUrl"         : "",
+                             "sEmptyTable"  : "表中数据为空",
+                             "sLoadingRecords": "载入中...",
+                             "sInfoThousands": ",",
+                             "oPaginate": {
+                                 "sFirst"   : "首页",
+                                 "sPrevious": "上页",
+                                 "sNext"    : "下页",
+                                 "sLast"    : "末页"
+                             },
+                             "oAria": {
+                                 "sSortAscending" : ": 以升序排列此列",
+                                 "sSortDescending": ": 以降序排列此列"
+                             }
+                         }
+                     });
+
+                },
+             })
+         });
+     });
+</script>
+
+</html>
