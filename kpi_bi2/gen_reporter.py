@@ -317,9 +317,10 @@ def write_log(db,bb):
                             item_value_sum='{}',
                             market_name='{}',
                             update_time=now(),
-                            bbrq='{}'
+                            bbrq='{}',
+                            item_name='{}'
                       where market_id='{}' and item_code= '{}'  and month='{}'
-                 """.format(po['value'],po['value_sum'],po['market_name'],get_bbrq(),po['market_id'], po['item_code'],get_month())
+                 """.format(po['value'],po['value_sum'],po['market_name'],get_bbrq(),po['item_name'],po['market_id'], po['item_code'],get_month())
         else:
             msg = 'insert market:{} item:{} log, value={},sum={}....'.format(po['market_id'],po['item_name'],po['value'],po['value_sum'])
             print(msg)

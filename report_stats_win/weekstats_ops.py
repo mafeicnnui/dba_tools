@@ -31,7 +31,7 @@ from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT as WD_ALIGN_VERTICAL
 
 
 config = {
-   'db_string'        : '10.2.39.17:23306:puppet:puppet:Puppet@123',
+   'db_string'        : '10.2.39.18:3306:puppet:puppet:Puppet@123',
    'start_date'       : (datetime.date.today() + datetime.timedelta(days = -7)).strftime("%Y-%m-%d"),
    'end_date'         : datetime.date.today().strftime("%Y-%m-%d"),
    'img_width'        : '1200px',
@@ -213,6 +213,7 @@ config = {
 #  ]
 
 def get_ds_mysql(ip, port, service, user, password):
+    print('get_ds_mysql=',ip,port,service,user,password)
     conn = pymysql.connect(host=ip, port=int(port),user=user, passwd=password,db=service, charset='utf8',
                            cursorclass=pymysql.cursors.DictCursor,autocommit=True)
     return conn
@@ -289,7 +290,7 @@ def get_xaxis_yaris(p_rs):
     return x,y
 
 def get_tj_data(cfg,p_type,p_tjsql):
-    db = config['db_mysql_dict']
+    db = cfg['db_mysql_dict']
     cr = db.cursor()
     if p_type == 'server':
        cr.execute(p_tjsql.format(cfg['server_id'],cfg['start_date'],cfg['end_date']))
@@ -301,7 +302,7 @@ def get_tj_data(cfg,p_type,p_tjsql):
     return get_xaxis_yaris(rs)
 
 def get_tj_data_running(cfg,p_type,p_tjsql):
-    db = config['db_mysql_dict']
+    db = cfg['db_mysql_dict']
     cr = db.cursor()
     if p_type in('db_detail','app_detail'):
        cr.execute(p_tjsql.replace('$$SERVER_ID$$',str(cfg['server_id']))
@@ -314,7 +315,7 @@ def get_tj_data_running(cfg,p_type,p_tjsql):
     return rs
 
 def get_tj_data_digest(cfg,p_type,p_tjsql):
-    db = config['db_mysql_dict']
+    db = cfg['db_mysql_dict']
     cr = db.cursor()
     if p_type in('week_detail'):
        cr.execute(p_tjsql)
@@ -340,7 +341,7 @@ def get_max_min_val(p_vals):
     return json.dumps(keys)
 
 def get_tj_data_json(cfg,p_tjsql):
-    db = config['db_mysql_dict']
+    db = cfg['db_mysql_dict']
     cr = db.cursor()
     cr.execute(p_tjsql.format(cfg['server_id'],cfg['start_date'],cfg['end_date']))
     rs = cr.fetchall()
@@ -1011,7 +1012,10 @@ def read_json(file):
 
 def stats():
     cfg    =  read_json('config.json')
-    cfg    =  get_mysql_db(config)
+    cfg['start_date'] = (datetime.date.today() + datetime.timedelta(days=-7)).strftime("%Y-%m-%d")
+    cfg['end_date'] = datetime.date.today().strftime("%Y-%m-%d")
+    print('cfg=',cfg)
+    cfg    =  get_mysql_db(cfg)
     server =  read_json('server.json')
     doc    =  write_doc_header(cfg)
     xh     =  1

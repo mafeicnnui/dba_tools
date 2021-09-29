@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>视频监控连接信息</title>
+    <link href="{{static_url('css/bootstrap.min.css')}}" rel="stylesheet" type="text/css" />
+    <link href="{{static_url('plugins/bootstrap-sweetalert/sweet-alert.css')}}" rel="stylesheet" type="text/css">
+</head>
+<body>
+    <br><br>
+    <div class="row">
+        <div class="col-lg-3"></div>
+        <div class="col-lg-6">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                 <h1 class="panel-title">视频监控连接信息维护</h1>
+            </div>
+            <div class="panel-body">
+               <form class="form-horizontal" role="form">
+                   <div class="form-group">
+                        <div>
+                            <label class="col-md-3 control-label"><span id="s_user_name">*</span>用户名称</label>
+                        </div>
+                        <div class="col-md-6">
+                            <input id="name"  type="text" class="form-control" placeholder="请输入用户名称">
+                        </div>
+                        <div>
+                            <label class="col-md-3 control-label"></label>
+                        </div>
+                   </div>
+                   <div class="form-group">
+                         <div>
+                            <label class="col-md-3 control-label"><span id="s_user_pass1">*</span>用户密码</label>
+                        </div>
+                        <div class="col-md-6">
+                            <input id="pass1"  type="password" class="form-control" placeholder="请输入密码">
+                        </div>
+                        <div>
+                            <label class="col-md-3 control-label"></label>
+                        </div>
+                   </div>
+                   <div class="form-group">
+                         <div>
+                            <label class="col-md-3 control-label"><span id="s_user_pass2">*</span>重复密码</label>
+                        </div>
+                        <div class="col-md-6">
+                            <input id="pass2"  type="password" class="form-control" placeholder="请再输入密码">
+                        </div>
+                        <div>
+                            <label class="col-md-3 control-label"></label>
+                        </div>
+                   </div>
+                  <div class="form-group">
+                        <div>
+                            <label class="col-md-3 control-label"><span id="s_ip">*</span>IP地址</label>
+                        </div>
+                        <div class="col-md-6">
+                            <input id="ip"  type="text" class="form-control" placeholder="请输入IP地址">
+                        </div>
+                       <div>
+                            <label class="col-md-3 control-label"></label>
+                        </div>
+                   </div>
+                   <div class="form-group">
+                        <div>
+                            <label class="col-md-3 control-label"><span id="s_port">*</span>端口号</label>
+                        </div>
+                        <div class="col-md-6">
+                            <input id="port"  type="text" class="form-control" placeholder="请输入端口号">
+                        </div>
+                        <div>
+                            <label class="col-md-3 control-label"></label>
+                        </div>
+                   </div>
+               </form>
+            </div>
+        </div>
+        <br>
+        <div class="form-group m-b-0">
+            <div class="col-sm-offset-5 col-sm-5">
+              <button id="add" type="button" class="btn btn-custom waves-effect waves-light btn-md">提交</button>
+            </div>
+       </div>
+    </div>
+        <div class="col-lg-3"></div>
+    </div>
+
+    <script src="{{static_url('js/jquery.min.js')}}"></script>
+    <script src="{{static_url('js/bootstrap.min.js')}}"></script>
+    <script src="{{static_url('plugins/bootstrap-sweetalert/sweet-alert.min.js')}}"></script>
+
+    <script>
+
+        function set_selected(){
+            document.all['s_user_name'].style.color="#ff0000";
+            document.all['s_user_pass1'].style.color="#ff0000";
+            document.all['s_user_pass2'].style.color="#ff0000";
+            document.all['s_ip'].style.color="#ff0000";
+            document.all['s_port'].style.color="#ff0000";
+        }
+
+        function check_valid(){
+
+             if ($('#name').val()=='') {
+                swal("用户名不能为空！", "", "error")
+                return  false
+             }
+             if ($('#pass1').val()=='') {
+                swal("口令不能为空！", "", "error")
+                return false
+             }
+             if ($('#pass2').val()=='') {
+                swal("重复口令不能为空！", "", "error")
+                return false
+             }
+             if ($('#ip').val()=='') {
+                swal("IP地址不能为空！", "", "error")
+                return false
+             }
+             if ($('#port').val()=='') {
+                swal("端口号不能为空！", "", "error")
+                return false
+            }
+            if ($('#pass1').val()!=$('#pass2').val()) {
+                swal("密码不一致！", "", "error")
+                return false
+            }
+            return true
+        }
+
+        $("#add").click(function () {
+            if (check_valid()) {
+                $.ajax({
+                    url: "/write_config_file",
+                    type: "post",
+                    datatype: "json",
+                    data: {
+                         name   : $('#name').val(),
+                         pass1  : $('#pass1').val(),
+                         ip     : $('#ip').val(),
+                         port   : $('#port').val(),
+                    },
+                    success: function (dataSet) {
+                        if (dataSet.code==0) {
+                            swal("提交成功！", "", "success")
+                        } else {
+                            swal("提交失败！", "", "info")
+                        }
+                    }
+                });
+            }
+          });
+
+        $(document).ready(function() {
+           set_selected()
+        });
+
+   </script>
+</body>
+
+</html>

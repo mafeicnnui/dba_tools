@@ -21,7 +21,7 @@ import pymongo
 from bson.objectid import ObjectId
 
 def mongo_connecter():
-    conn = pymongo.MongoClient(host='10.2.39.42', port=int('27016'))
+    conn = pymongo.MongoClient(host='10.2.39.43', port=int('27016'))
     db = conn['posB']
     return db
 
@@ -70,6 +70,16 @@ if __name__ == "__main__":
      n,v,id = parser_where(st)
      print('value=',n,v,id)
      db = mongo_connecter()
+     print('------------------------------------------')
+     myjs = "function(){return db.getCollectionNames()}"
+     print('res0=', db.eval(myjs))
+     myjs = "function(){ res=[];doc=db.posInfo.find().limit(10); for i in print('');return 123;}"
+     res = db.eval(myjs)
+     print('res1=', db.eval(myjs))
+     print('res2=',res)
+     print(type(res))
+
+
      cr = db[n]
      if id is not None:
         rs = cr.find({'_id':ObjectId(id)})
