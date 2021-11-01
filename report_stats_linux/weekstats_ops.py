@@ -30,7 +30,7 @@ from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT as WD_ALIGN_VERTICAL
 
 
 config = {
-   'db_string'        : '10.2.39.17:23306:puppet:puppet:Puppet@123',
+   'db_string'        : '10.2.39.18:3306:puppet:puppet:Puppet@123',
    'start_date'       : (datetime.date.today() + datetime.timedelta(days = -7)).strftime("%Y-%m-%d"),
    'end_date'         : datetime.date.today().strftime("%Y-%m-%d"),
    'img_width'        : '1200px',
@@ -884,7 +884,7 @@ def write_db_server(cfg,svrs,doc,xh):
                 Grapth = get_disk_usage(cfg, item, x_data, y_data)
             else:
                 pass
-            make_snapshot(snapshot, Grapth.render(), cfg['image_path']+'\\'+item['item_code'] + '.png', pixel_ratio=1)
+            make_snapshot(snapshot, Grapth.render(), cfg['image_path']+'\\'+item['item_code'] + '.png', pixel_ratio=1,is_remove_html=True)
             print(item['item_code'] + '.png generate ok!')
             doc.add_picture(cfg['image_path']+'\\'+item['item_code'] + '.png', width=Inches(cfg['doc_img_size']))
 
@@ -905,7 +905,7 @@ def write_db_server(cfg,svrs,doc,xh):
                 if x_data == [] or y_data == []:
                     continue
                 Grapth = get_disk_net_rw(cfg, item, x_data, y_data)
-            make_snapshot(snapshot, Grapth.render(), cfg['image_path']+'\\'+item['item_code'] + '.png', pixel_ratio=1)
+            make_snapshot(snapshot, Grapth.render(), cfg['image_path']+'\\'+item['item_code'] + '.png', pixel_ratio=1,is_remove_html=True)
             print(item['item_code'] + '.png generate ok!')
             doc.add_picture(cfg['image_path']+'\\'+item['item_code'] + '.png', width=Inches(cfg['doc_img_size']))
         cfg['counter'] = cfg['counter'] +1
@@ -977,7 +977,7 @@ def write_app_server(cfg,svrs,doc,xh):
                 Grapth = get_disk_usage(cfg, item, x_data, y_data)
             else:
                 pass
-            make_snapshot(snapshot, Grapth.render(), cfg['image_path']+'\\'+item['item_code'] + '.png', pixel_ratio=1)
+            make_snapshot(snapshot, Grapth.render(), cfg['image_path']+'\\'+item['item_code'] + '.png', pixel_ratio=1,is_remove_html=True)
             print(item['item_code'] + '.png generate ok!')
             doc.add_picture(cfg['image_path']+'\\'+item['item_code'] + '.png', width=Inches(cfg['doc_img_size']))
         cfg['counter'] = cfg['counter'] + 1
