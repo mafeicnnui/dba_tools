@@ -304,6 +304,7 @@ def get_file_and_pos(p_db):
     cur = p_db.cursor()
     cur.execute('show master status')
     ds = cur.fetchone()
+    print('ds=',ds)
     return ds
 
 def merge_insert(data):
@@ -548,15 +549,20 @@ def start_syncer(cfg):
     (1) afetr create table. 
     (2) empty table,no data 
     (3) get binlog ckpt
+  6.exception send mail  
+  7.check db binlog mode open ?
   
 '''
 
 if __name__ == "__main__":
-    mysql_ds  =  get_ds_by_dsid(16)
+    mysql_ds  =  get_ds_by_dsid(1)
     doris_ds  =  get_ds_by_dsid(185)
-    mysql_tab = 'hopsonone_bill.bill,hopsonone_park.park_order'
+    #mysql_tab = 'hopsonone_bill.bill,hopsonone_park.park_order'
+    #mysql_tab = 'hopson_hft.intel_order_detail,hopson_hft.operation_log'
+    mysql_tab  = 'hopsonone_park.park_order'
     doris_db  = 'test'
     db_mysql  =  get_db_by_ds(mysql_ds)
+    print(db_mysql)
     db_doris  =  get_doris_db(doris_ds,doris_db)
 
     if read_ckpt()!='':
@@ -580,9 +586,10 @@ if __name__ == "__main__":
         'binlogfile'      : file,
         'binlogpos'       : pos,
         'doris_config'    : DORIS_TAB_CONFIG,
-        'batch_size'      : 100,
-        'batch_timeout'   : 6,
-        'row_event_batch' : 100,
+        'batch_size'      : 500,
+        'batch_timeout'   : 10,
+        'row_event_batch' : 200,
     }
 
+    print(config)
     start_syncer(config)
