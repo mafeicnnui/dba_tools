@@ -345,6 +345,11 @@ def doris_exec(cfg,batch,flag='N'):
             print('exec nbatch {} for {}'.format(len(nbatch[tab]),tab))
             for st in nbatch[tab]:
                 if len(nbatch[tab])>0 and len(batch[tab]) % cfg['batch_size'] == 0:
+                    event = {'schema':tab.split('.')[0],'table':tab.split('.')[1]}
+                    if check_doris_tab_exists(cfg, event) == 0:
+                       print('create doris table {}.{} success!'.format(cfg['doris_db'],event['table']))
+                       create_doris_table(cfg, event)
+
                     print('multi rec:',st['amount'])
                     print('multi exec:',st['sql'])
                     cr.execute(st['sql'])
@@ -356,6 +361,11 @@ def doris_exec(cfg,batch,flag='N'):
                 print('doris exec nbatch no full data:', nbatch[tab])
                 print('exec nbatch {} for {}'.format(len(nbatch[tab]),tab))
                 for st in nbatch[tab]:
+                    event = {'schema':tab.split('.')[0],'table':tab.split('.')[1]}
+                    if check_doris_tab_exists(cfg, event) == 0:
+                        print('create doris table {}.{} success!'.format(cfg['doris_db'], event['table']))
+                        create_doris_table(cfg, event)
+
                     print('multi rec:', st['amount'])
                     print('multi exec:', st['sql'])
                     cr.execute(st['sql'])
@@ -494,7 +504,7 @@ def start_syncer(cfg):
 
 
                         if check_batch_full_data(batch,cfg):
-                           print('exec full batch...')
+                           print("\033[0;31;40mexec full batch...\033[0m")
                            doris_exec(cfg, batch,'F')
                            for o in cfg['mysql_tab'].split(','):
                                if len(batch[o]) % cfg['batch_size'] == 0:
@@ -504,7 +514,7 @@ def start_syncer(cfg):
 
             if get_seconds(start_time) >= cfg['batch_timeout'] :
                 if check_batch_exist_data(batch):
-                    print('timoeout:{},start_time:{}'.format(get_seconds(start_time),start_time))
+                    print("\033[0;31;40mtimoeout:{},start_time:{}\033[0m".format(get_seconds(start_time),start_time))
                     doris_exec(cfg, batch)
                     for o in cfg['mysql_tab'].split(','):
                          batch[o] = []
@@ -513,7 +523,7 @@ def start_syncer(cfg):
 
             if  row_event_count>0 and row_event_count % cfg['row_event_batch'] == 0:
                 if check_batch_exist_data(batch):
-                    print('row_event_count={}'.format(row_event_count))
+                    print("\033[0;31;40mrow_event_count={}\033[0m".format(row_event_count))
                     doris_exec(cfg, batch)
                     for o in cfg['mysql_tab'].split(','):
                         batch[o] = []
@@ -533,15 +543,18 @@ def start_syncer(cfg):
   1.support single db multi table
   2.supprt multi db multi table ,exaple:db1.tab1,db2.tab2
   3.exec sucesss write binlog,exception write binlog
-  4.support monitor all tables(N)
-  5.first empty table support full table sync(N)
+  4.support monitor db all tables(N),db.*
+  5.first empty table support full table sync(N),before query get binlogfile and pos like mysqldump
+    (1) afetr create table. 
+    (2) empty table,no data 
+    (3) get binlog ckpt
   
 '''
 
 if __name__ == "__main__":
-    mysql_ds  =  get_ds_by_dsid(1)
+    mysql_ds  =  get_ds_by_dsid(16)
     doris_ds  =  get_ds_by_dsid(185)
-    mysql_tab = 'test.xs,test.xs2'
+    mysql_tab = 'hopsonone_bill.bill,hopsonone_park.park_order'
     doris_db  = 'test'
     db_mysql  =  get_db_by_ds(mysql_ds)
     db_doris  =  get_doris_db(doris_ds,doris_db)
