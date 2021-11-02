@@ -7,6 +7,7 @@
 
 import sys
 import time
+import json
 import pymysql
 import re
 import traceback
@@ -172,7 +173,7 @@ def get_doris_table_defi(cfg,event):
                 AND table_name='{}'  ORDER BY ordinal_position""".format(event['schema'],event['table'])
     cr.execute(st)
     rs = cr.fetchall()
-    st= 'create table `{}`.`{}` (\n '.format(event['schema'],event['table'])
+    st= 'create table `{}`.`{}` (\n '.format(cfg['doris_db'],event['table'])
     for i in rs:
         if i[1] == 'varchar':
            st =  st + ' `{}`  String,\n'.format(i[0])
@@ -189,7 +190,7 @@ def check_doris_tab_exists(cfg,event):
    db=cfg['db_doris']
    cr=db.cursor()
    sql="""select count(0) from information_schema.tables
-            where table_schema='{}' and table_name='{}'""".format(event['schema'],event['table'])
+            where table_schema='{}' and table_name='{}'""".format(cfg['doris_db'],event['table'])
    cr.execute(sql)
    rs=cr.fetchone()
    db.commit()
@@ -227,7 +228,7 @@ def create_doris_table(cfg,event):
     cr = db.cursor()
     if check_tab_exists_pk(cfg,event) >0:
         st = get_doris_table_defi(cfg,event)
-        print('doris create table:',st.replace('$$PK_NAMES$$',get_table_pk_names(cfg,event)))
+        #print('doris create table:',st.replace('$$PK_NAMES$$',get_table_pk_names(cfg,event)))
         cr.execute(st.replace('$$PK_NAMES$$',get_table_pk_names(cfg,event)))
         time.sleep(0.1)
         db.commit()
@@ -247,8 +248,8 @@ def set_column(p_data,p_pk):
               v_set = v_set + key + '=\''+ str(p_data[key]) + '\','
     return v_set[0:-1]
 
-def get_ins_header(event):
-    v_ddl = 'insert into {0}.{1} ('.format(event['schema'],event['table'])
+def get_ins_header(cfg,event):
+    v_ddl = 'insert into {0}.{1} ('.format(cfg['doris_db'],event['table'])
     if event['action'] == 'insert':
         for key in event['data']:
             v_ddl = v_ddl + '`{0}`'.format(key) + ','
@@ -288,9 +289,9 @@ def get_where(cfg,event):
 
 def gen_sql(cfg,event):
     if event['action'] in ('insert','update'):
-        sql  = get_ins_header(event)+ ' values ('+get_ins_values(event)+');'
+        sql  = get_ins_header(cfg,event)+ ' values ('+get_ins_values(event)+');'
     elif event['action']=='delete':
-        sql  = 'delete from {0}.{1} {2}'.format(event['schema'],event['table'],get_where(cfg,event))
+        sql  = 'delete from {0}.{1} {2}'.format(cfg['doris_db'],event['table'],get_where(cfg,event))
     return sql
 
 def gen_ddl_sql(p_ddl):
@@ -305,27 +306,61 @@ def get_file_and_pos(p_db):
     ds = cur.fetchone()
     return ds
 
-def process_batch(p_batch):
-    pass
+def merge_insert(data):
+    header = data[0]['sql'].split(' values ')[0]
+    body = ''
+    for d in data:
+        body = body +d['sql'].split(' values ')[1][0:-1]+','
+    sql = header+' values '+body[0:-1]
+    return {'event':'insert','sql': sql ,'amount':len(data)}
+
+def process_batch(batch):
+    nbatch = {}
+    insert = []
+    for tab in batch:
+        flag = False
+        nbatch[tab] = []
+        for st in batch[tab]:
+            if st['event']  == 'insert':
+                  insert.append(st)
+
+            if st['event'] == 'delete':
+                   if len(insert)>0:
+                      nbatch[tab].append(merge_insert(insert))
+                      insert = []
+                   nbatch[tab].append(st)
+                   flag = True
+        if not flag and insert!=[]:
+           nbatch[tab].append(merge_insert(insert))
+           insert = []
+    return nbatch
 
 def doris_exec(cfg,batch,flag='N'):
     db = cfg ['db_doris']
     cr = db.cursor()
-    for tab in batch:
+    nbatch = process_batch(batch)
+    for tab in nbatch:
         if flag =='F':
-            print('doris_exec patch F:', tab)
-            print('doris_exec patch data F:', batch[tab])
-            for st in batch[tab]:
-                if len(batch[tab]) % cfg['batch_size'] == 0:
+            print('doris exec full nbatch data:', nbatch[tab])
+            print('exec nbatch {} for {}'.format(len(nbatch[tab]),tab))
+            for st in nbatch[tab]:
+                if len(nbatch[tab])>0 and len(batch[tab]) % cfg['batch_size'] == 0:
+                    print('multi rec:',st['amount'])
+                    print('multi exec:',st['sql'])
                     cr.execute(st['sql'])
+                    write_ckpt(cfg)
                     time.sleep(0.1)
 
         else:
-            print('doris_exec patch N:', tab)
-            print('doris_exec patch N data:', batch[tab])
-            for st in batch[tab]:
-                cr.execute(st['sql'])
-                time.sleep(0.1)
+            if len(nbatch[tab])>0:
+                print('doris exec nbatch no full data:', nbatch[tab])
+                print('exec nbatch {} for {}'.format(len(nbatch[tab]),tab))
+                for st in nbatch[tab]:
+                    print('multi rec:', st['amount'])
+                    print('multi exec:', st['sql'])
+                    cr.execute(st['sql'])
+                    write_ckpt(cfg)
+                    time.sleep(0.1)
 
 def check_sync(cfg,event):
     res = False
@@ -343,11 +378,31 @@ def check_batch_exist_data(batch):
 
 def check_batch_full_data(batch,cfg):
     for k in batch:
-        if len(batch[k]) % cfg['batch_size'] == 0:
+        if len(batch[k])>0 and len(batch[k]) % cfg['batch_size'] == 0:
            return True
     return False
 
+def write_ckpt(cfg):
+    print('write_ckpt file:{}'.format(cfg['binlogfile']))
+    print('write_ckpt pos:{}'.format(cfg['binlogpos']))
+    ckpt = {
+        'binlogfile':cfg['binlogfile'],
+        'binlogpos':cfg['binlogpos']
+    }
+    with open('mysqlbinlog.json', 'w') as f:
+        f.write(json.dumps(ckpt, ensure_ascii=False, indent=4, separators=(',', ':')))
 
+def read_ckpt():
+    with open('mysqlbinlog.json', 'r') as f:
+        contents = f.read()
+
+    if  contents == '':
+        return ''
+    else:
+        binlog = json.loads(contents)
+        file = binlog['binlogfile']
+        pos = binlog['binlogpos']
+        return file,pos
 
 '''
    检查点：
@@ -369,7 +424,6 @@ def start_syncer(cfg):
     row_event_count = 0
 
     for o in cfg['mysql_tab'].split(','):
-        print('init...batch[`{}`]'.format(o))
         batch[o] = []
 
     try:
@@ -382,24 +436,30 @@ def start_syncer(cfg):
             log_file            = cfg['binlogfile'],
             log_pos             = int(cfg['binlogpos']))
 
-        print('Sync Configuration:')
+        print('\nSync Configuration:')
         print('-------------------------------------------------------------')
         print('batch_size=',cfg['batch_size'])
         print('batch_timeout=',cfg['batch_timeout'])
         print('row_event_batch=',cfg['row_event_batch'])
+        print('')
 
         start_time = datetime.datetime.now()
-
         for binlogevent in stream:
+
+            if isinstance(binlogevent, RotateEvent):
+                current_master_log_file = binlogevent.next_binlog
+                print("Next binlog file: %s" ,current_master_log_file)
+                cfg['binlogfile'] = current_master_log_file
+
             row_event_count = row_event_count + 1
 
-            if binlogevent.event_type in (2,):
+            if isinstance(binlogevent, QueryEvent):
+                cfg['binlogpos'] = binlogevent.packet.log_pos
                 event = {"schema": bytes.decode(binlogevent.schema), "query": binlogevent.query.lower()}
                 if 'create' in event['query'] or 'drop' in event['query']  or 'alter' in event['query'] or 'truncate' in event['query']:
                     ddl = gen_ddl_sql(event['query'])
                     event['table'] = get_obj_name(event['query']).lower()
                     if check_sync(cfg,event) and ddl is not None:
-                       print('ddl:', ddl)
                        if check_doris_tab_exists(cfg,event) == 0:
                           create_doris_table(cfg,event)
 
@@ -409,6 +469,7 @@ def start_syncer(cfg):
 
                 for row in binlogevent.rows:
 
+                    cfg['binlogpos'] = binlogevent.packet.log_pos
                     event = {"schema": binlogevent.schema.lower(), "table": binlogevent.table.lower()}
                     if check_sync(cfg, event):
 
@@ -416,7 +477,7 @@ def start_syncer(cfg):
                             event["action"] = "delete"
                             event["data"] = row["values"]
                             sql = gen_sql(cfg,event)
-                            batch[event['schema']+'.'+event['table']].append({'event':'delete','sql':sql})  # event.schema.event.table
+                            batch[event['schema']+'.'+event['table']].append({'event':'delete','sql':sql})
 
                         elif isinstance(binlogevent, UpdateRowsEvent):
                             event["action"] = "update"
@@ -433,7 +494,7 @@ def start_syncer(cfg):
 
 
                         if check_batch_full_data(batch,cfg):
-                           print('check_batch_full_data...')
+                           print('exec full batch...')
                            doris_exec(cfg, batch,'F')
                            for o in cfg['mysql_tab'].split(','):
                                if len(batch[o]) % cfg['batch_size'] == 0:
@@ -443,7 +504,7 @@ def start_syncer(cfg):
 
             if get_seconds(start_time) >= cfg['batch_timeout'] :
                 if check_batch_exist_data(batch):
-                    print('check_batch_exist_data...timoeout:{},start_time={}'.format(get_seconds(start_time),start_time))
+                    print('timoeout:{},start_time:{}'.format(get_seconds(start_time),start_time))
                     doris_exec(cfg, batch)
                     for o in cfg['mysql_tab'].split(','):
                          batch[o] = []
@@ -452,7 +513,7 @@ def start_syncer(cfg):
 
             if  row_event_count>0 and row_event_count % cfg['row_event_batch'] == 0:
                 if check_batch_exist_data(batch):
-                    print('check_batch_exist_data...row_event_count={}'.format(row_event_count))
+                    print('row_event_count={}'.format(row_event_count))
                     doris_exec(cfg, batch)
                     for o in cfg['mysql_tab'].split(','):
                         batch[o] = []
@@ -462,36 +523,51 @@ def start_syncer(cfg):
 
     except Exception as e:
         traceback.print_exc()
+        write_ckpt(cfg)
+
     finally:
         stream.close()
-
 
 
 '''
   1.support single db multi table
   2.supprt multi db multi table ,exaple:db1.tab1,db2.tab2
+  3.exec sucesss write binlog,exception write binlog
+  4.support monitor all tables(N)
+  5.first empty table support full table sync(N)
+  
 '''
 
 if __name__ == "__main__":
     mysql_ds  =  get_ds_by_dsid(1)
     doris_ds  =  get_ds_by_dsid(185)
-    mysql_tab = 'test.xs,test.xs2'.lower()
+    mysql_tab = 'test.xs,test.xs2'
     doris_db  = 'test'
     db_mysql  =  get_db_by_ds(mysql_ds)
     db_doris  =  get_doris_db(doris_ds,doris_db)
-    file,pos  =  get_file_and_pos(db_mysql)[0:2]
+
+    if read_ckpt()!='':
+       file,pos =read_ckpt()
+       print('from mysqlbinlog.json read ckpt...')
+       print('binlogfile=',file)
+       print('binlogpos=',pos)
+    else:
+       file,pos = get_file_and_pos(db_mysql)[0:2]
+       print('from mysql database read binlog...')
+       print('binlogfile=', file)
+       print('binlogpos=', pos)
 
     config  = {
         'mysql_ds'        : mysql_ds,
         'doris_ds'        : doris_ds,
-        'mysql_tab'       : mysql_tab,
+        'mysql_tab'       : mysql_tab.lower(),
         'doris_db'        : doris_db,
         'db_mysql'        : db_mysql,
         'db_doris'        : db_doris,
         'binlogfile'      : file,
         'binlogpos'       : pos,
         'doris_config'    : DORIS_TAB_CONFIG,
-        'batch_size'      : 20,
+        'batch_size'      : 100,
         'batch_timeout'   : 6,
         'row_event_batch' : 100,
     }
