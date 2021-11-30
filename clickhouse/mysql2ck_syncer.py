@@ -321,5 +321,17 @@ if __name__ == "__main__":
     file,pos = get_file_and_pos(sour_ds)[0:2]
     db       = 'test'
     tab      = 'business'
-    ck       = ck_executer('10.2.39.21', 9000, 'default', '6lYaUiFi', 'test', 5)
-    start_syncer(sour_ds,file,db,tab,pos,ck)
+    #ck       = ck_executer('10.2.39.21', 9000, 'default', '6lYaUiFi', 'test', 5)
+    # start_syncer(sour_ds,file,db,tab,pos,ck)
+    #ck.insert_data("insert into xs(id,xm,csrq) values(1,'a','2021-11-01'),(2,'b','2021-11-02'),(3,'c','2021-11-03')")
+    #ck.insert_data("insert into xs(id,xm,csrq) values(1,'a2','2021-11-01'),(2,'b2','2021-11-02'),(3,'c2','2021-11-03')")
+
+    ck = Client(host='10.2.39.21', port=9000, user='default', password='6lYaUiFi', database='test',
+                    send_receive_timeout=5)
+
+    sql = """select count(0) from system.tables
+               where database='{}' and name='{}'""".format('test','business4')
+    rs = ck.execute(sql)
+    print('rs=',rs[0][0])
+
+

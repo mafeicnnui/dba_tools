@@ -21,6 +21,7 @@ import pymysql
 import datetime
 import calendar
 import smtplib
+import traceback
 from email.mime.text import MIMEText
 
 def read_json(file):
@@ -279,6 +280,7 @@ def get_value(p_dbd,p_dsid,p_st,p_st_sum):
         val2 = 0 if rs2[0] is None else str(rs2[0])
         return val1,val2
     except:
+        traceback.print_exc()
         return 0,0
 
 def get_markets(dblog,flag):
@@ -333,7 +335,7 @@ def write_log(db,bb):
 
 def update_log(db):
     cr = db.cursor()
-    st = """delete from kpi_po_mx where month='{}' and item_code in ('2','12','10','15')""".format(get_month())
+    st = """delete from kpi_po_mx where month='{}' and item_code in ('2','12','10','15','25')""".format(get_month())
     cr.execute(st)
     wrtie_task_detail_log(db, '删除汇总数据')
 
@@ -448,6 +450,28 @@ def update_log(db):
     cr.execute(st)
     wrtie_task_detail_log(db, '生成总部：线上GMV/线下销售额...')
     db.commit()
+
+    # 计算 HST 智慧MALLGMV指标（万）
+    st = """
+            INSERT INTO kpi_po_mx(bbrq,MONTH,market_id,market_name,item_code,item_name,item_value,item_value_sum,create_time,update_time)
+                SELECT 
+                      bbrq,
+                      MONTH,
+                      market_id,
+                      market_name,
+                     '25' AS item_code,
+                     '智慧MALLGMV指标（万）' AS item_name,
+                     ROUND((SELECT item_value FROM kpi_po_mx b WHERE a.month=b.month AND a.market_id=b.market_id AND b.item_code='12')-
+                           (SELECT item_value FROM kpi_po_mx b WHERE a.month=b.month AND a.market_id=b.market_id AND b.item_code='24'),2) AS item_value,
+                     NULL AS item_value_sum,
+                     NOW() AS create_time,
+                     NOW() AS update_time  
+                FROM kpi_po_mx a WHERE a.month='{}' AND a.market_id=90000 AND a.item_code='12'
+                """.format(get_month())
+    cr.execute(st)
+    wrtie_task_detail_log(db, '生成总部：智慧MALLGMV指标（万）...')
+    db.commit()
+
 
 def update_hz(db):
     cr = db.cursor()

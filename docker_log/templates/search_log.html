@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>docker日志查看</title>
+    <link href="{{static_url('css/bootstrap.min.css')}}" rel="stylesheet" type="text/css" />
+    <link href="{{static_url('plugins/bootstrap-datetimepicker/css/bootstrap-datetimepicker.css')}}" rel="stylesheet" >
+    <link href="{{static_url('plugins/bootstrap-sweetalert/sweet-alert.css')}}" rel="stylesheet" type="text/css">
+
+    <style>
+       #ace-editor {
+           height:800px;
+        }
+    </style>
+</head>
+<body>
+   <p></p>
+   <form class="form-horizontal" role="form" >
+        <div class="row">
+           <div class="form-group col-md-3">
+                <div>
+                    <label class="col-md-4 control-label"><span>*</span>工程名</label>
+                </div>
+                <div class="col-md-8">
+                    <input id="project_name"  type="text" class="form-control" placeholder="请输入项目名称">
+                </div>
+           </div>
+           <div class="form-group col-md-3">
+                <div>
+                    <label class="col-md-4 control-label"><span>*</span>Pod列表</label>
+                </div>
+                <div class="col-md-8">
+                     <select class="form-control select" id="podname">
+                        <option value='' selected = "selected">请选择pod</option>
+                     </select>
+                </div>
+           </div>
+           <div class="form-group col-md-3">
+                <div>
+                    <label class="col-md-4 control-label"><span>*</span>日期</label>
+                </div>
+                <div class="col-md-8">
+                     <select class="form-control select" id="logrq">
+                        <option value='' selected = "selected">请选择日期</option>
+                     </select>
+                </div>
+           </div>
+
+        </div>
+       <div class="row">
+           <div class="form-group col-md-3">
+                <div>
+                    <label class="col-md-4 control-label"><span>*</span>时间起</label>
+                </div>
+                <div class="col-md-8">
+                    <input id="search_date_begin"  type="text"  class="form-control datetimepicker"  readonly   placeholder="请输入查询时间起">
+                </div>
+           </div>
+           <div class="form-group col-md-3">
+                <div>
+                    <label class="col-md-4 control-label"><span>*</span>时间止</label>
+                </div>
+                <div class="col-md-8">
+                    <input id="search_date_end"  type="text"  class="form-control datetimepicker"  readonly   placeholder="请输入查询时间止">
+                </div>
+           </div>
+           <div class="form-group col-md-3">
+                <div>
+                    <label class="col-md-4 control-label"><span>*</span>查询串</label>
+                </div>
+                <div class="col-md-8">
+                    <input id="search_stirng"  type="text" class="form-control" placeholder="查询文本">
+                </div>
+           </div>
+           <div class="form-group col-md-1">
+             <span class="input-group-btn">
+                 <button type="button"  id='query_btn' class="btn waves-effect waves-light btn-primary">查&nbsp;询</button>
+             </span>
+          </div>
+        </div>
+   </form>
+   <hr>
+   <div id ='ace-editor'>
+
+   </div>
+</body>
+</html>
+
+<script src="{{static_url('js/jquery.min.js')}}"></script>
+<script src="{{static_url('js/bootstrap.min.js')}}"></script>
+<script src="{{static_url('plugins/editors/src-min/ace.js')}}"></script>
+<script src="{{static_url('plugins/editors/src-min/ext-language_tools.js')}}"></script>
+<script src="{{static_url('plugins/editors/src-min/mode-mysql.js')}}"></script>
+<script src="{{static_url('plugins/bootstrap-datetimepicker/js/bootstrap-datetimepicker.js')}}"></script>
+<script src="{{static_url('plugins/bootstrap-datetimepicker/js/bootstrap-datetimepicker.zh-CN.js')}}"></script>
+<script src="{{static_url('plugins/bootstrap-sweetalert/sweet-alert.min.js')}}"></script>
+
+<script>
+
+   $('#project_name').change(function(){
+       query_pods();
+   })
+
+  $('#podname').change(function(){
+       query_logrq();
+   })
+
+    function query_pods() {
+       console.log('query pod....')
+
+       if ($('#project_name').val() == '') {
+            swal('项目名称不能为空!', "", "error")
+            return
+       }
+
+       $.ajax({
+                  url: "/pod",
+                  type: "get",
+                  datatype: "json",
+                  data:{
+                      project_name : $('#project_name').val(),
+                  },
+                  success: function (dataSet) {
+                      console.log(dataSet.code)
+                      if (dataSet.code == -1) {
+                            swal(dataSet.data, "", "error")
+                      } else {
+                        console.log('pod=',dataSet,dataSet.data)
+                        $("#podname").empty();
+                        $("#podname").append("<option value='' selected = \"selected\">请选择pod</option>");
+                        for(i=0;i<dataSet.data.length;i++){
+                           var val  = dataSet.data[i]
+                            console.log('val=',val)
+                            if (val!='') {
+                               $("#podname").append("<option value='"+val+"'>"+val+"</option>");
+                            }
+                         }
+                      }
+                  }
+              })
+   }
+
+    function query_logrq() {
+       console.log('query query_logrq....')
+
+       if ($('#podname').val() == '') {
+            swal('pod名不能为空!', "", "error")
+            return
+       }
+
+       $.ajax({
+                  url: "/getRq",
+                  type: "get",
+                  datatype: "json",
+                  data:{
+                      pod_name : $('#podname').val(),
+                  },
+                  success: function (dataSet) {
+                      console.log(dataSet)
+                      if (dataSet.code == -1) {
+                            swal(dataSet.data, "", "error")
+                      } else {
+                        console.log('logrq=',dataSet,dataSet.data)
+                        $("#logrq").empty();
+                        $("#logrq").append("<option value='' selected = \"selected\">请选择日期</option>");
+                        for(i=0;i<dataSet.data.length;i++){
+                           var val  = dataSet.data[i]
+                            console.log('val=',val)
+                            if (val!='') {
+                               $("#logrq").append("<option value='"+val+"'>"+val+"</option>");
+                            }
+                         }
+                      }
+                  }
+              })
+   }
+
+   $('#query_btn').click(function(){
+       console.log('query....')
+
+       if ($('#project_name').val() == '') {
+            swal('项目名称不能为空!', "", "error")
+            return
+       }
+
+       if ($('#podname').val() == '') {
+            swal('pod名不能为空!', "", "error")
+            return
+       }
+
+       $.ajax({
+                  url: "/log",
+                  type: "get",
+                  datatype: "json",
+                  data:{
+                      pod_name           : $('#podname').val(),
+                      log_rq             : $('#logrq').val(),
+                      search_date_begin  : $('#search_date_begin').val(),
+                      search_date_end    : $('#search_date_end').val(),
+                      search_stirng      : $('#search_stirng').val()
+                  },
+                  success: function (dataSet) {
+                      console.log(dataSet.code)
+                      if (dataSet.code == -1) {
+                            swal(dataSet.data, "", "error")
+                      } else {
+                        console.log(dataSet)
+                        var v=''
+                        for (i=0;i<dataSet['data'].length;i++) {
+                            v=v+dataSet['data'][i]['msg']+'\n'
+                        }
+                        var editor = ace.edit("ace-editor");
+                        editor.setValue('')
+                        editor.insert(v)
+                        editor.setReadOnly(true);
+                      }
+                  }
+              })
+   })
+
+   $(document).ready(function() {
+         //ace editor
+          var editor = ace.edit("ace-editor");
+          editor.setTheme("ace/theme/twilight");
+          editor.getSession().setMode("ace/mode/text");
+          editor.setShowPrintMargin(false);
+          editor.setFontSize(16);
+          editor.getSession().setUseSoftTabs(true);
+          editor.setReadOnly(true);
+
+         $('.datetimepicker').datetimepicker({
+            language: 'zh-CN',
+            CustomFormat: 'yyyy-mm-dd HH',
+            weekStart: 1,
+            todayBtn: 1,            //显示当天按钮，点击则选择当天当天时间
+            autoclose: 1,           //选完时间自动关闭
+            todayHighlight: 1,      //当天时间高亮
+            startView: 2,           //从月视图开始，选天
+            minView: 0,             //提供选择分钟的视图
+            forceParse: 0,
+            minuteStep: 1           //用于构建小时视图。就是最小的视图是每1分钟可选一次。是以分钟为单位的
+        });
+
+
+   });
+</script>

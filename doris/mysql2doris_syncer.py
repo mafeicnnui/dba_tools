@@ -10,6 +10,7 @@ import time
 import json
 import pymysql
 import re
+import os
 import traceback
 import logging
 from pymysqlreplication import BinLogStreamReader
@@ -342,7 +343,7 @@ def doris_exec(cfg,batch,flag='N'):
     nbatch = process_batch(batch)
     for tab in nbatch:
         if flag =='F':
-            print('doris exec full nbatch data:', nbatch[tab])
+            #print('doris exec full nbatch data:', nbatch[tab])
             print('exec nbatch {} for {}'.format(len(nbatch[tab]),tab))
             for st in nbatch[tab]:
                 if len(nbatch[tab])>0 and len(batch[tab]) % cfg['batch_size'] == 0:
@@ -351,15 +352,16 @@ def doris_exec(cfg,batch,flag='N'):
                        print('create doris table {}.{} success!'.format(cfg['doris_db'],event['table']))
                        create_doris_table(cfg, event)
 
-                    print('multi rec:',st['amount'])
-                    print('multi exec:',st['sql'])
+                    #print('multi exec:',st['sql'])
+                    start_time = datetime.datetime.now()
                     cr.execute(st['sql'])
+                    print('multi rec:{},time:{}s'.format(st['amount'],get_seconds(start_time) ))
                     write_ckpt(cfg)
                     time.sleep(0.1)
 
         else:
             if len(nbatch[tab])>0:
-                print('doris exec nbatch no full data:', nbatch[tab])
+                #print('doris exec nbatch no full data:', nbatch[tab])
                 print('exec nbatch {} for {}'.format(len(nbatch[tab]),tab))
                 for st in nbatch[tab]:
                     event = {'schema':tab.split('.')[0],'table':tab.split('.')[1]}
@@ -367,9 +369,10 @@ def doris_exec(cfg,batch,flag='N'):
                         print('create doris table {}.{} success!'.format(cfg['doris_db'], event['table']))
                         create_doris_table(cfg, event)
 
-                    print('multi rec:', st['amount'])
-                    print('multi exec:', st['sql'])
+                    #print('multi exec:', st['sql'])
+                    start_time = datetime.datetime.now()
                     cr.execute(st['sql'])
+                    print('multi rec:{},time:{}s'.format(st['amount'],get_seconds(start_time) ))
                     write_ckpt(cfg)
                     time.sleep(0.1)
 
@@ -402,6 +405,10 @@ def write_ckpt(cfg):
     }
     with open('mysqlbinlog.json', 'w') as f:
         f.write(json.dumps(ckpt, ensure_ascii=False, indent=4, separators=(',', ':')))
+
+
+def check_ckpt():
+    return os.path.isfile('mysqlbinlog.json')
 
 def read_ckpt():
     with open('mysqlbinlog.json', 'r') as f:
@@ -559,13 +566,13 @@ if __name__ == "__main__":
     doris_ds  =  get_ds_by_dsid(185)
     #mysql_tab = 'hopsonone_bill.bill,hopsonone_park.park_order'
     #mysql_tab = 'hopson_hft.intel_order_detail,hopson_hft.operation_log'
-    mysql_tab  = 'hopsonone_park.park_order'
-    doris_db  = 'test'
+    mysql_tab = 'test.park_order'
+    doris_db  = 'hopsonone_park'
     db_mysql  =  get_db_by_ds(mysql_ds)
     print(db_mysql)
     db_doris  =  get_doris_db(doris_ds,doris_db)
 
-    if read_ckpt()!='':
+    if check_ckpt()!='':
        file,pos =read_ckpt()
        print('from mysqlbinlog.json read ckpt...')
        print('binlogfile=',file)
@@ -586,9 +593,9 @@ if __name__ == "__main__":
         'binlogfile'      : file,
         'binlogpos'       : pos,
         'doris_config'    : DORIS_TAB_CONFIG,
-        'batch_size'      : 500,
-        'batch_timeout'   : 10,
-        'row_event_batch' : 200,
+        'batch_size'      : 5000,
+        'batch_timeout'   : 30,
+        'row_event_batch' : 500,
     }
 
     print(config)
