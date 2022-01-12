@@ -4,5 +4,8 @@
     "db_user"      : "puppet",
     "db_pass"      : "Puppet@123",
     "db_service"   : "puppet",
-    "db_charset"   : "utf8"
+    "db_charset"   : "utf8",
+    "month"        : "2022-01",
+    "begin_date"   : "2022-01-01",
+    "end_date"     : "2022-01-31 23:59:59"
 }

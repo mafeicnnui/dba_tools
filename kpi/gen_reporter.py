@@ -7,28 +7,6 @@
 
 '''
   功能：按不同项目生成各各指标，定时发送邮件
-
-/*
-<tr>
-	<th>项目编码</th>
-	<th>项目名称</th>
-	<th>报表日期</th>
-	<th>商品上传spu</th>
-	<th>会员拉新(万人)</th>
-	<th>支付即积分覆盖率</th>
-	<th>保底积分率</th>
-	<th>总GMV(万元)</th>
-	<th>生成时间</th>
-</tr>
-*/
-SELECT market_id,
-	b.dmmc AS market_name,
-	a.tjrq,
-	a.v1,a.v2,a.v3,a.v4,a.v5,
-	DATE_FORMAT(a.create_time,'%Y-%m-%d %H:%i:%s') AS create_time
-FROM t_bbtj_log a ,t_dmmx b
- WHERE a.market_id=b.dmm AND b.dm='05' AND a.tjrq=DATE_FORMAT(DATE_SUB(NOW(),INTERVAL 0 DAY),'%Y-%m-%d') ORDER BY market_id
-
 '''
 
 import sys
@@ -155,7 +133,7 @@ def get_bb_values(bb):
 
 def write_log(db,bb):
     bb = get_bb_values(bb)
-    st = """delete from t_bbtj_log where market_id='{}' and bbdm='bb01' and tjrq=DATE_FORMAT(DATE_SUB(NOW(),INTERVAL 1 DAY),'%Y-%m-%d')""".format(bb['market'])
+    st = """delete from t_bbtj_log where market_id='{}' and bbdm='bb01' and tjrq=DATE_FORMAT(DATE_SUB(NOW(),INTERVAL 0 DAY),'%Y-%m-%d')""".format(bb['market'])
     cr= db.cursor()
     cr.execute(st)
     st = """insert into t_bbtj_log(market_id,bbdm,tjrq,v1,v2,v3,v4,v5,create_time) 
@@ -287,8 +265,8 @@ if __name__ == '__main__':
     v_content = get_html_contents(dbd)
 
     # 发送邮件
-    # send_mail25('190343@lifeat.cn', 'Hhc5HBtAuYTPGHQ8', '190343@lifeat.cn', v_title, v_content)
-    send_mail25('190343@lifeat.cn', 'Hhc5HBtAuYTPGHQ8','190634@lifeat.cn,807216@lifeat.cn,548400@hopson.com.cn,546564@hopson.com.cn,807319@cre-hopson.com,608520@hopson.com.cn,609479@hopson.com.cn,gonghaipeng@hopson.com.cn,190343@lifeat.cn', v_title, v_content)
+    # send_mail25('190343@lifeat.cn', 'R86hyfjobMBYR76h', '190343@lifeat.cn', v_title, v_content)
+    send_mail25('190343@lifeat.cn', 'R86hyfjobMBYR76h','190634@lifeat.cn,807216@lifeat.cn,546564@hopson.com.cn,807319@cre-hopson.com,608520@hopson.com.cn,609479@hopson.com.cn,gonghaipeng@hopson.com.cn,820618@cre-hopson.com,820636@cre-hopson.com,808080@cre-hopson.com,190343@lifeat.cn', v_title, v_content)
     # 释放连接
     db.close()
     dbd.close()

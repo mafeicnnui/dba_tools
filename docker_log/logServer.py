@@ -164,7 +164,7 @@ def process_log(p_pod,p_logrq,p_begin_rq,p_end_rq,p_string):
     print_dict(cfg)
 
     # write db
-    if search_date[0:10] == current_rq():
+    if search_date=='':
         write_log(read_log(cfg['local_logfile']))
     else:
         write_log(read_log(cfg['gzip_local_file']))
@@ -198,14 +198,6 @@ def process_logrq(p_pod):
     return {'code':0,'data':rq}
 
 
-def get_pod(p_pod):
-    res = get_cmds_pods()
-    val  = [ i.split(' ')[0] for i in  get_value(res['cmd'].format(project_name)).split('\n')]
-    if  val is None or val =='':
-        res = {'code':-1,'data':'获取podname失败'}
-        return res
-    return {'code':0,'data':val}
-
 class search(tornado.web.RequestHandler):
     def get(self):
         self.render("search_log.html")
@@ -217,7 +209,6 @@ class log(tornado.web.RequestHandler):
             self.set_header("Content-Type", "application/json; charset=UTF-8")
             pod_name           = self.get_argument("pod_name")
             log_rq             = self.get_argument("log_rq")
-
             search_date_begin  = self.get_argument("search_date_begin")
             search_date_end    = self.get_argument("search_date_end")
             search_stirng      = self.get_argument("search_stirng")

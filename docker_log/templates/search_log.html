@@ -6,7 +6,7 @@
     <link href="{{static_url('css/bootstrap.min.css')}}" rel="stylesheet" type="text/css" />
     <link href="{{static_url('plugins/bootstrap-datetimepicker/css/bootstrap-datetimepicker.css')}}" rel="stylesheet" >
     <link href="{{static_url('plugins/bootstrap-sweetalert/sweet-alert.css')}}" rel="stylesheet" type="text/css">
-
+    <link href="{{static_url('plugins/toastr/toastr.min.css')}}" rel="stylesheet" type="text/css" />
     <style>
        #ace-editor {
            height:800px;
@@ -14,8 +14,9 @@
     </style>
 </head>
 <body>
-   <p></p>
-   <form class="form-horizontal" role="form" >
+  <div id="div-main">
+    <p></p>
+    <form class="form-horizontal" role="form" >
         <div class="row">
            <div class="form-group col-md-3">
                 <div>
@@ -45,9 +46,14 @@
                      </select>
                 </div>
            </div>
-
+           <div class="form-group col-md-3">
+                 <span  class="col-md-1 btn btn-sm text-left" id="copybtn" onclick="copy_pass('#copybtn')"  data-clipboard-action="copy" data-clipboard-target="#podname2">复制</span>
+                 <div class="col-md-8" style="">
+                    <input id="podname2"  type="text" class="form-control" style="color:transparent;background-color:transparent;border:0;">
+                </div>
+           </div>
         </div>
-       <div class="row">
+        <div class="row">
            <div class="form-group col-md-3">
                 <div>
                     <label class="col-md-4 control-label"><span>*</span>时间起</label>
@@ -79,10 +85,10 @@
           </div>
         </div>
    </form>
-   <hr>
-   <div id ='ace-editor'>
+    <hr>
+    <div id ='ace-editor'></div>
+  </div>
 
-   </div>
 </body>
 </html>
 
@@ -94,16 +100,78 @@
 <script src="{{static_url('plugins/bootstrap-datetimepicker/js/bootstrap-datetimepicker.js')}}"></script>
 <script src="{{static_url('plugins/bootstrap-datetimepicker/js/bootstrap-datetimepicker.zh-CN.js')}}"></script>
 <script src="{{static_url('plugins/bootstrap-sweetalert/sweet-alert.min.js')}}"></script>
+<script src="{{static_url('plugins/loaders/blockui.min.js')}}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js"></script>
+<script src="{{static_url('plugins/toastr/toastr.min.js')}}"></script>
 
 <script>
 
-   $('#project_name').change(function(){
-       query_pods();
-   })
+    function start_Loader(p_id) {
+        var light = $('#'+p_id).parent();
+        $(light).block({
+            message: '<i class="icon-spinner spinner"></i>',
+            overlayCSS: {
+                backgroundColor: '#FFFAFA',
+                opacity: 0.8,
+                cursor: 'wait'
+            },
+            css: {
+                border: 0,
+                padding: 0,
+                backgroundColor: 'none'
+            }
+        });
+    }
 
-  $('#podname').change(function(){
+    function end_Loader(p_id) {
+        var light = $('#'+p_id).parent();
+        $(light).unblock();
+    }
+
+    function showtips(flag,title,content){
+        toastr.options = {
+              "closeButton": false,
+              "debug": false,
+              "newestOnTop": false,
+              "progressBar": true,
+              "positionClass": "toast-top-right",
+              "preventDuplicates": false,
+              "onclick": null,
+              "showDuration": "3000",
+              "hideDuration": "1000",
+              "timeOut": "5000",
+              "extendedTimeOut": "1000",
+              "showEasing": "swing",
+              "hideEasing": "linear",
+              "showMethod": "fadeIn",
+              "hideMethod": "fadeOut"
+            }
+            toastr[flag](content,title)
+     }
+
+    function copy_pass(copyid){
+        var clipboard = new ClipboardJS(copyid)
+        clipboard.on("success", function (e) {
+            showtips('info','','复制成功!');
+            clipboard.destroy();
+        });
+
+       clipboard.on('error', function(e) {
+          showtips('error','','复制失败!');
+       });
+    }
+
+    $('#project_name').change(function(){
+       query_pods();
+    })
+
+    $('#podname').change(function(){
        query_logrq();
-   })
+    })
+
+    $('#podname').change(function(){
+        $('#podname2').val($('#podname').val())
+    })
 
     function query_pods() {
        console.log('query pod....')
@@ -121,16 +189,13 @@
                       project_name : $('#project_name').val(),
                   },
                   success: function (dataSet) {
-                      console.log(dataSet.code)
                       if (dataSet.code == -1) {
                             swal(dataSet.data, "", "error")
                       } else {
-                        console.log('pod=',dataSet,dataSet.data)
                         $("#podname").empty();
                         $("#podname").append("<option value='' selected = \"selected\">请选择pod</option>");
                         for(i=0;i<dataSet.data.length;i++){
                            var val  = dataSet.data[i]
-                            console.log('val=',val)
                             if (val!='') {
                                $("#podname").append("<option value='"+val+"'>"+val+"</option>");
                             }
@@ -204,7 +269,6 @@
                       if (dataSet.code == -1) {
                             swal(dataSet.data, "", "error")
                       } else {
-                        console.log(dataSet)
                         var v=''
                         for (i=0;i<dataSet['data'].length;i++) {
                             v=v+dataSet['data'][i]['msg']+'\n'
@@ -219,7 +283,6 @@
    })
 
    $(document).ready(function() {
-         //ace editor
           var editor = ace.edit("ace-editor");
           editor.setTheme("ace/theme/twilight");
           editor.getSession().setMode("ace/mode/text");
@@ -227,8 +290,7 @@
           editor.setFontSize(16);
           editor.getSession().setUseSoftTabs(true);
           editor.setReadOnly(true);
-
-         $('.datetimepicker').datetimepicker({
+          $('.datetimepicker').datetimepicker({
             language: 'zh-CN',
             CustomFormat: 'yyyy-mm-dd HH',
             weekStart: 1,
@@ -240,7 +302,11 @@
             forceParse: 0,
             minuteStep: 1           //用于构建小时视图。就是最小的视图是每1分钟可选一次。是以分钟为单位的
         });
-
-
    });
+
+   $(document).ajaxStart(function() {
+        start_Loader('div-main')
+    }).ajaxStop(function() {
+        end_Loader('div-main')
+    });
 </script>

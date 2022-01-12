@@ -1012,12 +1012,15 @@ def read_json(file):
 
 def stats():
     cfg    =  read_json('config.json')
+    print('cfg=',cfg)
     cfg['start_date'] = (datetime.date.today() + datetime.timedelta(days=-7)).strftime("%Y-%m-%d")
     cfg['end_date'] = datetime.date.today().strftime("%Y-%m-%d")
     print('cfg=',cfg)
     cfg    =  get_mysql_db(cfg)
     server =  read_json('server.json')
     doc    =  write_doc_header(cfg)
+    print(cfg)
+    print(server)
     xh     =  1
     doc    =  write_digest_header(doc,xh)
     doc    =  write_doc_digest(cfg,doc)
