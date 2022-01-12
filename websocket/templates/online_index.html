@@ -14,7 +14,7 @@
     <script type="text/javascript">
 
         //创建ws协议连接，创建出来后就已经和服务端建立连接
-        var ws = new WebSocket("ws://127.0.0.1:8000/chat?username={{current_user}}");
+        var ws = new WebSocket("ws://10.16.44.180:8000/chat?username={{current_user}}");
 
         //收到ws消息的时候在div对话框里面增加一行文字
         ws.onmessage = function(recv) {

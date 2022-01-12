@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-export WORKDIR='/home/hopson/apps/usr/webserver/dba/kpi_bi2'
+export WORKDIR='/home/hopson/apps/usr/webserver/dba/kpi_bi3'
 export PYTHONUNBUFFERED="1"
 export PYTHONPATH=${WORKDIR}
 export PYTHON3_HOME=/usr/local/python3.6

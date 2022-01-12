@@ -6,13 +6,15 @@
 # @Software: PyCharm
 
 '''
-  功能：按不同项目生成各各指标，定时发送邮件
-    SELECT * FROM `kpi_po`  ORDER BY market_id+0;
-    SELECT * FROM `kpi_item` ORDER BY CODE;
-    SELECT * FROM kpi_item_sql WHERE if_stat='Y' ORDER BY item_code
-    SELECT * FROM `kpi_po_mx`
-    SELECT a.* FROM kpi_po_mx a,kpi_po b WHERE a.market_id=b.market_id ORDER BY b.sxh,item_code+0
-    SELECT a.* FROM kpi_po_hz a,kpi_po b WHERE a.market_id=b.market_id ORDER BY b.sxh,item_code+0
+ 接收KPI邮件名单：
+    彭伟萍，546564@hopson.com.cn
+    廖醒文，820506@cre-hopson.com
+    李治冶，820618@cre-hopson.com
+    林丽双，850646@cre-hopson.com
+    任春宇，820987@cre-hopson.com
+    谢芳，190634@lifeat.cn
+    蔡世强，821498@cre-hopson.com
+    "receiver"     : "190343@lifeat.cn,546564@hopson.com.cn,820506@cre-hopson.com,820618@cre-hopson.com,850646@cre-hopson.com,820987@cre-hopson.com,190634@lifeat.cn,821498@cre-hopson.com"
 
 '''
 
@@ -68,12 +70,8 @@ def get_templete():
                     <body>
                        <h3 align="center"><b>商管BI-KPI统计情况表</b></h3>
                        <p></p>
-                       <br>统计日期：<br>
-                           &nbsp;&nbsp;<span>$$TJRQ$$</span>
-                       
-                       <br>统计范围：<br>
-                           &nbsp;&nbsp;本月：<span>$$TJRQQ$$～$$TJRQZ$$</span><br>
-                           &nbsp;&nbsp;累计：<span>$$LJTJRQQ$$～$$TJRQZ$$</span>
+                       <br>统计日期：<span>$$TJRQ$$</span>
+                       <br>统计范围：<span>$$TJRQQ$$～$$TJRQZ$$</span>                          
                        <p>
                        $$TABLE$$
                     </body>
@@ -120,10 +118,8 @@ def aes_decrypt(p_db,p_password, p_key):
     rs = cr.fetchone()
     return str(rs['pass'], encoding="utf-8")
 
-
 def format_sql(v_sql):
     return v_sql.replace("\\","\\\\").replace("'","\\'")
-
 
 def get_ds_by_dsid(p_db,p_dsid):
     st ="""select cast(id as char) as dsid,
@@ -231,6 +227,105 @@ def get_label_id(dbd,market_id):
     else:
       return ''
 
+def write_bbtj(dbd):
+    cr = dbd.cursor()
+    st = """INSERT INTO t_kpi_bbtj(bbrq,item_type,item_name,market_id,market_name,item_value,item_month,item_rate,create_time)
+SELECT
+  DATE_FORMAT( NOW(),'%Y-%m-%d'),
+  item_type,
+  item_name,
+  market_id,
+  market_name,
+  item_value,
+  (SELECT item_value FROM t_kpi_item_value b 
+        WHERE b.market_name=a.`market_name` 
+          AND b.item_month=DATE_FORMAT(NOW(),'%Y-%m') 
+          AND b.item_name=a.item_name) AS item_month,
+  '' AS item_rate,
+  NOW()
+FROM t_kpi_item_log a
+WHERE (a.market_name,a.item_name,a.stat_sql_id,a.xh) IN(
+SELECT market_name,item_name,stat_sql_id,MAX(xh)
+ FROM t_kpi_item_log GROUP BY market_name,item_name,stat_sql_id)
+ ORDER BY 
+   CASE WHEN a.item_type='项目' THEN 1 
+        WHEN a.item_type='区域' THEN 2 
+        ELSE 3 END,
+   CASE WHEN a.market_name='北京朝阳合生汇' THEN 1
+        WHEN a.market_name='北京合生麒麟新天地' THEN 2
+        WHEN a.market_name='北京木樨园合生广场' THEN 3
+        WHEN a.market_name='成都温江合生汇' THEN 4
+        WHEN a.market_name='广州海珠合生广场(南)' THEN 5
+        WHEN a.market_name='广州海珠合生新天地' THEN 6
+        WHEN a.market_name='广州增城合生汇' THEN 7
+        WHEN a.market_name='上海青浦合生新天地' THEN 8
+        WHEN a.market_name='上海五角场合生汇' THEN 9 
+        WHEN a.market_name='直管区域' THEN 10
+        WHEN a.market_name='上海区域' THEN 11
+        WHEN a.market_name='广州区域' THEN 12
+        WHEN a.market_name='商管总部及合生通' THEN 13
+        ELSE 14 END"""
+    cr.execute("delete from t_kpi_bbtj where bbrq=DATE_FORMAT( NOW(),'%Y-%m-%d')")
+    cr.execute(st)
+
+def get_hz_log(dbd):
+   cr=dbd.cursor()
+   st="""SELECT bbrq,market_id,market_name,item_name,item_value,
+                date_format(create_time,'%Y-%m-%d %H:%i:%s') as create_time
+FROM t_kpi_bbtj 
+WHERE item_name IN('GMV（万）',
+'会员销售占比',
+'上线SPU数量（个）',
+'POS GMV（万）',
+'会员运营GMV（万）',
+'商城+本地生活GMV（万）'
+'数字账单GMV（万）',
+'物业增值GMV（万）'
+) AND market_name NOT IN('商管总部及合生通','直管区域','上海区域','广州区域')
+ORDER BY id""".format(get_month())
+   cr.execute(st)
+   rs=cr.fetchall()
+   return rs
+
+
+def get_html_contents(p_dbd):
+    v_html = get_templete()
+    v_tab_header  = '<table class="xwtable">'
+    v_tab_thead   = '''<thead>
+                           <tr>
+                               <th>报表日期</th>
+                               <th>项目编码</th>
+                               <th>项目名称</th>
+                               <th>指标名称</th>
+                               <th>指标完成</th>
+                               <th>生成时间</th>
+                           </tr>  
+                    </thead>'''
+    v_tab_tbody   = '<tbody>'
+    for log in list(get_hz_log(p_dbd)):
+        v_tab_tbody = v_tab_tbody + \
+            '''<tr>
+                   <td>{}</td>
+                   <td>{}</td>
+                   <td>{}</td>
+                   <td>{}</td>
+                   <td>{}</td>
+                   <td>{}</td>
+             </tr>'''.format(
+                             log.get('bbrq'),
+                             log.get('market_id'),
+                             log.get('market_name'),
+                             log.get('item_name'),
+                             log.get('item_value'),
+                             log.get('create_time'))
+
+    v_tab_tbody = v_tab_tbody + '</tbody>'
+    v_table=v_tab_header+v_tab_thead+v_tab_tbody+'</table>'
+    v_html = v_html.replace('$$TABLE$$',v_table)
+    v_html = v_html.replace('$$TJRQ$$',get_time())
+    v_html = v_html.replace('$$TJRQQ$$', get_first_day())
+    v_html = v_html.replace('$$TJRQZ$$', get_last_day())
+    return v_html
 
 if __name__ == '__main__':
     dbd    = get_db_dict()
@@ -250,6 +345,14 @@ if __name__ == '__main__':
             v = get_value(dbd,s['dsid'],q)
             set_item_value(dbd,s['stat_sql_id'],s['xh'],v)
             write_item_log(dbd,i,s,q,v)
+
+    write_bbtj(dbd)
+
+    # 发送邮件
+    if cfg['is_send_mail'] == 'Y':
+        v_title = '商管BI-KPI统计情况表-{}'.format(get_bbrq())
+        v_content = get_html_contents(dbd)
+        send_mail25(cfg['sender'], cfg['sender_pass'], cfg['receiver'], v_title, v_content)
 
     dbd.close()
 
