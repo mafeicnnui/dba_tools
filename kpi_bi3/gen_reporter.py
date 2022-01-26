@@ -48,6 +48,21 @@ def send_mail25(p_from_user,p_from_pass,p_to_user,p_title,p_content):
     except smtplib.SMTPException as e:
         print(e)
 
+def send_mail25_win(p_from_user,p_from_pass,p_to_user,p_title,p_content):
+    to_user=p_to_user.split(",")
+    try:
+        msg = MIMEText(p_content,'html','utf-8')
+        msg["Subject"] = p_title
+        msg["From"]    = p_from_user
+        msg["To"]      = ",".join(to_user)
+        server = smtplib.SMTP_SSL("smtp.exmail.qq.com", 465)
+        server.set_debuglevel(0)
+        server.login(p_from_user, p_from_pass)
+        server.sendmail(p_from_user, to_user, msg.as_string())
+        server.quit()
+    except smtplib.SMTPException as e:
+        print(e)
+
 def get_time():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -157,7 +172,6 @@ def get_bbtj_sql(p_db,p_stat_id):
     cr.close()
     return rs
 
-
 def get_value(p_dbd,p_dsid,p_sql):
     try:
         ds = get_ds_by_dsid(p_dbd,p_dsid)
@@ -189,7 +203,6 @@ def check_item_log_exists(dbd,i,s):
     cr.close()
     return rs['rec']
 
-
 def write_item_log(dbd,i,s,q,v):
     cr = dbd.cursor()
     if check_item_log_exists(dbd,i,s) >0:
@@ -206,7 +219,6 @@ def write_item_log(dbd,i,s,q,v):
          """.format(i['item_type'],i['item_name'],i['market_id'],i['market_name'],s['stat_sql_id'],s['xh'],format_sql(q),v)
     cr.execute(st)
     print('insert t_kpi_item_log {}=>{}(sql_stat_id:{}/xh={},val={})'.format(i['market_name'],i['item_name'],s['stat_sql_id'],s['xh'],v))
-
 
 def get_markets(dblog,flag):
     st = "select  * from `t_kpi_item` where is_stat='Y'  order by id".format(flag)
@@ -267,6 +279,15 @@ SELECT market_name,item_name,stat_sql_id,MAX(xh)
         ELSE 14 END"""
     cr.execute("delete from t_kpi_bbtj where bbrq=DATE_FORMAT( NOW(),'%Y-%m-%d')")
     cr.execute(st)
+    cr.execute("""
+    UPDATE t_kpi_bbtj 
+ SET item_rate=
+	CASE WHEN item_value IS NULL OR item_value='' THEN 
+	 '0' 
+	ELSE
+	 CONCAT(ROUND(REPLACE(item_value,'%','')/REPLACE(item_month,'%','')*100,2),'%') 
+	END 
+    """)
 
 def get_hz_log(dbd):
    cr=dbd.cursor()
@@ -278,11 +299,12 @@ WHERE item_name IN('GMV（万）',
 '上线SPU数量（个）',
 'POS GMV（万）',
 '会员运营GMV（万）',
-'商城+本地生活GMV（万）'
+'商城+本地生活GMV（万）',
 '数字账单GMV（万）',
 '物业增值GMV（万）'
 ) AND market_name NOT IN('商管总部及合生通','直管区域','上海区域','广州区域')
-ORDER BY id""".format(get_month())
+and bbrq='{}'
+ORDER BY id""".format(get_time()[0:11])
    cr.execute(st)
    rs=cr.fetchall()
    return rs
@@ -332,27 +354,35 @@ if __name__ == '__main__':
     bbrqq  = get_first_day()
     bbrqz  = get_last_day()
 
-    print('统计范围:{}~{}'.format(bbrqq,bbrqz))
-    print('-------------------------------------------')
-    for i in get_markets(dbd,'N'):
-        for s in  get_bbtj_sql(dbd,i['stat_sql_id']):
-            if __name__ == '__main__':
-                q = s['statement'].\
-                    replace('$$BBRQQ$$',bbrqq).\
-                    replace('$$BBRQZ$$',bbrqz).\
-                    replace('$$MARKET_ID$$',i['market_id']).\
-                    replace('$$LABEL_ID$$',get_label_id(dbd,i['market_id']))
-            v = get_value(dbd,s['dsid'],q)
-            set_item_value(dbd,s['stat_sql_id'],s['xh'],v)
-            write_item_log(dbd,i,s,q,v)
+    if cfg['only_bbtj'] == 'N':
+        print('统计范围:{}~{}'.format(bbrqq,bbrqz))
+        print('-------------------------------------------')
+        for i in get_markets(dbd,'N'):
+            for s in  get_bbtj_sql(dbd,i['stat_sql_id']):
+                if __name__ == '__main__':
+                    q = s['statement'].\
+                        replace('$$BBRQQ$$',bbrqq).\
+                        replace('$$BBRQZ$$',bbrqz).\
+                        replace('$$MARKET_ID$$',i['market_id']).\
+                        replace('$$LABEL_ID$$',get_label_id(dbd,i['market_id']))
+                v = get_value(dbd,s['dsid'],q)
+                set_item_value(dbd,s['stat_sql_id'],s['xh'],v)
+                write_item_log(dbd,i,s,q,v)
 
-    write_bbtj(dbd)
+
+        print('write t_kpi_bbtj...')
+        write_bbtj(dbd)
+        print('write t_kpi_bbtj ok!')
+    else:
+        print('write t_kpi_bbtj...')
+        write_bbtj(dbd)
+        print('write t_kpi_bbtj ok!')
 
     # 发送邮件
     if cfg['is_send_mail'] == 'Y':
         v_title = '商管BI-KPI统计情况表-{}'.format(get_bbrq())
         v_content = get_html_contents(dbd)
-        send_mail25(cfg['sender'], cfg['sender_pass'], cfg['receiver'], v_title, v_content)
+        send_mail25_win(cfg['sender'], cfg['sender_pass'], cfg['receiver'], v_title, v_content)
 
     dbd.close()
 

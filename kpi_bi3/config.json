@@ -8,6 +8,7 @@
     "month"        : "2022-01",
     "begin_date"   : "2022-01-01",
     "end_date"     : "2022-01-31 23:59:59",
+    "only_bbtj"    : "Y",
     "is_send_mail" : "Y",
     "sender"       : "190343@lifeat.cn",
     "sender_pass"  : "R86hyfjobMBYR76h",
