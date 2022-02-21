@@ -21,8 +21,9 @@ import pymongo
 from bson.objectid import ObjectId
 
 def mongo_connecter():
-    conn = pymongo.MongoClient(host='10.2.39.43', port=int('27016'))
+    conn = pymongo.MongoClient(host='39.106.184.57', port=int('27016'))
     db = conn['posB']
+    db.authenticate('root', 'JULc9GnEuNHYUTBG')
     return db
 
 def parse_name(p_sql):
@@ -65,25 +66,25 @@ def parser_where(p_sql):
 
 if __name__ == "__main__":
      # st = """db.getCollection('menu').find({})"""
-     st = """db.getCollection('menu').find({"_id": ObjectId("5d40ead88505cf5bdbb376e8")})"""
-
-     n,v,id = parser_where(st)
-     print('value=',n,v,id)
+     # st = """db.getCollection('menu').find({"_id": ObjectId("5d40ead88505cf5bdbb376e8")})"""
+     #
+     # n,v,id = parser_where(st)
+     # print('value=',n,v,id)
      db = mongo_connecter()
-     print('------------------------------------------')
-     myjs = "function(){return db.getCollectionNames()}"
-     print('res0=', db.eval(myjs))
-     myjs = "function(){ res=[];doc=db.posInfo.find().limit(10); for i in print('');return 123;}"
-     res = db.eval(myjs)
-     print('res1=', db.eval(myjs))
-     print('res2=',res)
-     print(type(res))
+     # print('------------------------------------------')
+     # myjs = "function(){return db.getCollectionNames()}"
+     # print('res0=', db.eval(myjs))
+     # myjs = "function(){ res=[];doc=db.posInfo.find().limit(10); for i in print('');return 123;}"
+     # res = db.eval(myjs)
+     # print('res1=', db.eval(myjs))
+     # print('res2=',res)
+     # print(type(res))
 
+     # st = db['menu'].find({})
+     # print('st=',st)
+     # for i in st:
+     #     print(i)
 
-     cr = db[n]
-     if id is not None:
-        rs = cr.find({'_id':ObjectId(id)})
-     else:
-        rs = cr.find(json.loads(v))
-     for i in rs:
+     print('---------------------------------')
+     for i in db.list_collection_names(session=None):
          print(i)

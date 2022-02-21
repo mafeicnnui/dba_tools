@@ -18,12 +18,14 @@
 
 '''
 
+import sys
 import json
 import pymysql
 import datetime
 import smtplib
 import traceback
 from email.mime.text import MIMEText
+from email.header import Header
 
 def read_json(file):
     with open(file, 'r') as f:
@@ -52,10 +54,10 @@ def send_mail25_win(p_from_user,p_from_pass,p_to_user,p_title,p_content):
     to_user=p_to_user.split(",")
     try:
         msg = MIMEText(p_content,'html','utf-8')
-        msg["Subject"] = p_title
-        msg["From"]    = p_from_user
-        msg["To"]      = ",".join(to_user)
-        server = smtplib.SMTP_SSL("smtp.exmail.qq.com", 465)
+        msg["Subject"] = Header(p_title, 'utf-8')
+        msg["From"]    = Header(p_from_user, 'utf-8')
+        msg["To"]      = Header(",".join(to_user), 'utf-8')
+        server = smtplib.SMTP("smtp.exmail.qq.com", 25)
         server.set_debuglevel(0)
         server.login(p_from_user, p_from_pass)
         server.sendmail(p_from_user, to_user, msg.as_string())
@@ -291,20 +293,19 @@ SELECT market_name,item_name,stat_sql_id,MAX(xh)
 
 def get_hz_log(dbd):
    cr=dbd.cursor()
-   st="""SELECT bbrq,market_id,market_name,item_name,item_value,
-                date_format(create_time,'%Y-%m-%d %H:%i:%s') as create_time
-FROM t_kpi_bbtj 
-WHERE item_name IN('GMV（万）',
-'会员销售占比',
-'上线SPU数量（个）',
-'POS GMV（万）',
-'会员运营GMV（万）',
-'商城+本地生活GMV（万）',
-'数字账单GMV（万）',
-'物业增值GMV（万）'
-) AND market_name NOT IN('商管总部及合生通','直管区域','上海区域','广州区域')
-and bbrq='{}'
-ORDER BY id""".format(get_time()[0:11])
+   st="""SELECT bbrq,
+market_id,
+market_name,
+item_name,
+item_month_value,
+item_finish_value,
+CASE WHEN item_month_value = 0 THEN
+    ''
+ELSE 
+    CONCAT(ROUND(REPLACE(item_finish_value,'%','')/REPLACE(item_month_value,'%','')*100,2),'%')
+END  percent,
+create_time
+FROM `v_kpi_bbtj` WHERE bbrq = '{}' ORDER BY id""".format(get_time()[0:11])
    cr.execute(st)
    rs=cr.fetchall()
    return rs
@@ -319,7 +320,9 @@ def get_html_contents(p_dbd):
                                <th>项目编码</th>
                                <th>项目名称</th>
                                <th>指标名称</th>
+                               <th>月度指标</th>
                                <th>指标完成</th>
+                               <th>完成率</th>
                                <th>生成时间</th>
                            </tr>  
                     </thead>'''
@@ -333,12 +336,16 @@ def get_html_contents(p_dbd):
                    <td>{}</td>
                    <td>{}</td>
                    <td>{}</td>
+                   <td>{}</td>
+                   <td>{}</td>
              </tr>'''.format(
                              log.get('bbrq'),
                              log.get('market_id'),
                              log.get('market_name'),
                              log.get('item_name'),
-                             log.get('item_value'),
+                             log.get('item_month_value'),
+                             log.get('item_finish_value'),
+                             log.get('percent'),
                              log.get('create_time'))
 
     v_tab_tbody = v_tab_tbody + '</tbody>'
@@ -382,7 +389,11 @@ if __name__ == '__main__':
     if cfg['is_send_mail'] == 'Y':
         v_title = '商管BI-KPI统计情况表-{}'.format(get_bbrq())
         v_content = get_html_contents(dbd)
-        send_mail25_win(cfg['sender'], cfg['sender_pass'], cfg['receiver'], v_title, v_content)
+        if sys.platform == 'win32':
+           print('>>>>>>>>>>>>')
+           send_mail25_win(cfg['sender'], cfg['sender_pass'], cfg['receiver'], v_title, v_content)
+        else:
+           send_mail25(cfg['sender'], cfg['sender_pass'], cfg['receiver'], v_title, v_content)
 
     dbd.close()
 
