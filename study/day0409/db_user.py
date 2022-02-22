@@ -35,7 +35,7 @@ def save_user(name,age,gender):
         cr = db.cursor()
         print('Execute sql:{}'.format(st))
         cr.execute(st)
-        return {'code':0,'msg':'保存成功!'}
+        return {'code':0,'msg':'save success!'}
     except Exception as e:
         traceback.print_exc()
-        return {'code':-1,'msg':'保存失败!({})'.format(str(e))}
+        return {'code':-1,'msg':'save failure!({})'.format(str(e))}

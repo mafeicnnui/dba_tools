@@ -14,7 +14,7 @@ import tornado.web
 import tornado.options
 import tornado.httpserver
 import tornado.locale
-from   study.day0409.db_user import save_user,query_user
+from   study.day0409.db_user import save_user
 from   study.day0409.utils import get_host_ip
 
 # 控制器
@@ -25,9 +25,9 @@ class user(tornado.web.RequestHandler):
      def post(self):
         self.set_header("Content-Type", "application/json; charset=UTF-8")
         name   = self.get_argument("name")
-        age = self.get_argument("age")
+        age    = self.get_argument("age")
         gender = self.get_argument("gender")
-        res = save_user(name,age,gender)
+        res    = save_user(name,age,gender)
         self.write(json.dumps(res))
 
 
