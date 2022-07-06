@@ -243,7 +243,7 @@ def get_label_id(dbd,market_id):
 
 def write_bbtj(dbd):
     cr = dbd.cursor()
-    st = """INSERT INTO t_kpi_bbtj(bbrq,item_type,item_name,market_id,market_name,item_value,item_month,item_rate,create_time)
+    st = """INSERT INTO t_kpi_bbtj(bbrq,item_type,item_name,market_id,market_name,item_value,item_month,item_rate,create_time,sn)
 SELECT
   DATE_FORMAT( NOW(),'%Y-%m-%d'),
   item_type,
@@ -256,7 +256,8 @@ SELECT
           AND b.item_month=DATE_FORMAT(NOW(),'%Y-%m') 
           AND b.item_name=a.item_name) AS item_month,
   '' AS item_rate,
-  NOW()
+  NOW(),
+  (SELECT sn FROM t_kpi_bbtj_sn b WHERE b.item_type=a.item_type AND b.market_name=a.market_name) 
 FROM t_kpi_item_log a
 WHERE (a.market_name,a.item_name,a.stat_sql_id,a.xh) IN(
 SELECT market_name,item_name,stat_sql_id,MAX(xh)

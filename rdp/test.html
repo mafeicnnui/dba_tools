@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+  <button id="rdp">open</button>
+
+
+</body>
+<script src="jquery.min.js"></script>
+<script>
+    function Run(strPath)
+    {
+        var objShell = new ActiveXObject("wscript.shell");
+        objShell.exec(strPath);
+        objShell = null;
+    }
+
+     $('#rdp').click(function(){
+         Run('d:/work/dba_tools/rdp/aaa.rdp')
+     })
+</script>
+
+</html>

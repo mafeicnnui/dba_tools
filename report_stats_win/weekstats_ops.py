@@ -617,7 +617,7 @@ def write_doc_header(cfg):
 
     p3 = document.add_paragraph()
     p3.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-    f3 = p3.add_run('编制人员：合生通运维交付部')
+    f3 = p3.add_run('编制人员：运维交付部')
     f3.font.name = 'Times New Roman'
     f3.element.rPr.rFonts.set(qn('w:eastAsia'), '黑体')
     f3.font.size = Pt(10)

@@ -263,7 +263,7 @@ def server_warning(config):
                                   fail_times + 1
                                   )
             if fail_times in (3, 4, 5):
-                send_message(cfg, v_title + v_content)
+               send_message(cfg, v_title + v_content)
 
             write_warn_log(cfg, r['server_id'], r['index_code'], r['index_name'], r['index_value'], 'failure')
         else:
@@ -298,7 +298,6 @@ def server_warning(config):
     '''关送数据库连接'''
     cfg['db_mysql'].close()
     cfg['db_mysql_dict'].close()
-
 
 def get_max_disk_usage(d_disk):
     n_max_val =0.0

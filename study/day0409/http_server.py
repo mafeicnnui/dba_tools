@@ -20,7 +20,7 @@ from   study.day0409.utils import get_host_ip
 # 控制器
 class user(tornado.web.RequestHandler):
      def get(self):
-        self.render('add_user.html')
+        self.render('add_user_ajax.html')
 
      def post(self):
         self.set_header("Content-Type", "application/json; charset=UTF-8")
@@ -28,6 +28,7 @@ class user(tornado.web.RequestHandler):
         age    = self.get_argument("age")
         gender = self.get_argument("gender")
         res    = save_user(name,age,gender)
+        print('res=',res)
         self.write(json.dumps(res))
 
 
@@ -37,7 +38,6 @@ class Application(tornado.web.Application):
     def __init__(self):
         handlers = [
             (r"/user", user),
-
         ]
         settings = dict(
             static_path=os.path.join(os.path.dirname(__file__), "static"),  # 配置静态资源 js,css

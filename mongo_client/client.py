@@ -5,17 +5,7 @@
 # @File : client.py
 # @Software: PyCharm
 
-'''
-  1. 开发，测试环境先测
-  2. 查询命令支持，解析find()中的内容
-  3. db.getCollection('menu').find({})
-  4. db.menu.find({})
-  5. db.getCollection('menu').find({"_id":ObjectId("5d40ead88505cf5bdbb376e8")})
-
-'''
-
 import re
-import sys
 import json
 import pymongo
 from bson.objectid import ObjectId
@@ -25,6 +15,22 @@ def mongo_connecter():
     db = conn['posB']
     db.authenticate('root', 'JULc9GnEuNHYUTBG')
     return db
+
+def mongo_connecter2():
+    conn = pymongo.MongoClient(host='39.96.14.108', port=27018)
+    db = conn['posB']
+    db.authenticate('admin', 'admin')
+    return db
+
+def eval():
+    db = mongo_connecter2()
+    #myjs = "function(){ return 123;}"
+    #myjs = "function(){res=db.posInfo.find().limit(10); return res;}"
+    #myjs = "function(){ var v='';for(var c=db.posInfo.find().limit(10);c.hasNext();){v=v+c.next();printjson(c.next())}}"
+    myjs = "function(){ var v='';for(var c=db.posInfo.find().limit(1);c.hasNext();){ v=printjson(c.next());} return v;}"
+    print('res=', db.eval(myjs))
+    res = db.eval(myjs)
+    print('res=',type(res))
 
 def parse_name(p_sql):
     pattern = re.compile(r'(db.getCollection\(\'.*\'\))', re.I)
@@ -53,7 +59,6 @@ def parser_objectId(p_where):
         print('Parse Error:Not Found collection where!')
         return None
 
-
 def parser_where(p_sql):
     t_name  = parse_name(p_sql)
     t_where = parser_find(p_sql)
@@ -61,30 +66,56 @@ def parser_where(p_sql):
        t_objId = parser_objectId(t_where)
        return t_name,None,t_objId
     else:
-       v_where= t_where.split('(')[1].split(')')[0]
-       return t_name,v_where,None
+       v_where= t_where.split('(')[1].split(')')[0].replace("'",'"')
+       return t_name,json.loads(v_where),None
+
+def parser_limit(p_sql):
+    if p_sql.find('.limit')>=0:
+       return p_sql.split('.limit(')[1].split(')')[0]
+    else:
+       return None
+
+def queryDatabases():
+    db = mongo_connecter()
+    print('---------------------------------')
+    for i in db.list_collection_names(session=None):
+        print(i)
+
+def findAll(st):
+    db = mongo_connecter()
+    n,v,id = parser_where(st)
+    res = db[n].find()
+    return res
+
+def findById(st):
+    db = mongo_connecter()
+    n,v,id = parser_where(st)
+    res = db[n].find({'_id': ObjectId(id)})
+    return res
+
+def findByFilter(st):
+    db = mongo_connecter()
+    n,v,id = parser_where(st)
+    l = parser_limit(st)
+    print(n,v,id)
+    if id is not None:
+        if l is not None:
+           return  findById(st).limit(int(l))
+        else:
+           return findById(st)
+    else:
+        if l is not None:
+          return db[n].find(v).limit(int(l))
+        else:
+          return db[n].find(v)
+
 
 if __name__ == "__main__":
-     # st = """db.getCollection('menu').find({})"""
-     # st = """db.getCollection('menu').find({"_id": ObjectId("5d40ead88505cf5bdbb376e8")})"""
-     #
-     # n,v,id = parser_where(st)
-     # print('value=',n,v,id)
-     db = mongo_connecter()
-     # print('------------------------------------------')
-     # myjs = "function(){return db.getCollectionNames()}"
-     # print('res0=', db.eval(myjs))
-     # myjs = "function(){ res=[];doc=db.posInfo.find().limit(10); for i in print('');return 123;}"
-     # res = db.eval(myjs)
-     # print('res1=', db.eval(myjs))
-     # print('res2=',res)
-     # print(type(res))
+     st = """db.getCollection('menu').find({}).limit(5)"""
+     #st = """db.getCollection('menu').find({"_id": ObjectId("5d40ead88505cf5bdbb376e8")})"""
+     #st = """db.getCollection('menu').find({"menuId": 'm16'})"""
+     res = findByFilter(st)
+     for r in res:
+         print(r)
 
-     # st = db['menu'].find({})
-     # print('st=',st)
-     # for i in st:
-     #     print(i)
 
-     print('---------------------------------')
-     for i in db.list_collection_names(session=None):
-         print(i)

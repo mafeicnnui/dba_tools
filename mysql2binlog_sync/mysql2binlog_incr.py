@@ -125,89 +125,56 @@ def gen_sql(event):
        pass
     return sql,rsql
 
-def get_binlog(p_file,p_db,p_tab,p_start_pos):
-    #rollback_statments = []
+def get_binlog(p_file,p_pos,p_db,p_tab):
     try:
         stream = BinLogStreamReader(connection_settings=MYSQL_SETTINGS,
                                     only_events=[QueryEvent,DeleteRowsEvent, UpdateRowsEvent, WriteRowsEvent],
-                                    only_tables=["xs"],
-                                    only_schemas=["test"],
+                                    # only_tables=[p_db],
+                                    # only_schemas=[p_tab],
                                     server_id=100,
                                     blocking=True,
                                     resume_stream=True,
-                                   # log_file=p_file,
-                                   # log_pos=int(p_start_pos)
+                                    log_file=p_file,
+                                    log_pos=p_pos
                                     )
 
-        #schema = MYSQL_SETTINGS['db']
 
         for binlogevent in stream:
-            #if binlogevent is not None:
-                if isinstance(binlogevent, QueryEvent):
-                    if bytes.decode(binlogevent.schema) == "test":
-                        print('binlogevent=', binlogevent.dump())
-                        print('stream.log_file,stream.log_pos=', stream.log_file, stream.log_pos)
-                        event = {"schema": bytes.decode(binlogevent.schema), "query": binlogevent.query.lower()}
-                        print(event)
-                else:
-                    if binlogevent is not None:
-                       print('binlogevent=', binlogevent.dump())
-            # print('binlogevent=',binlogevent.dump())
-            #print('binlogeven=', binlogevent.event_type,binlogevent.packet.log_pos)
-            #
-            # if isinstance(binlogevent, QueryEvent):
-            #     event = {"schema": bytes.decode(binlogevent.schema), "query": binlogevent.query.lower()}
-            #     if 'create' in event['query'] or 'drop' in event['query']  or 'alter' in event['query'] or 'truncate' in event['query']:
-            #         if event['schema'] == schema:
-            #             print(binlogevent.query.lower())
-            #
-            # # if binlogevent.event_type in (30, 31, 32):
-            # if isinstance(binlogevent, DeleteRowsEvent) or isinstance(binlogevent, UpdateRowsEvent) or isinstance(binlogevent, WriteRowsEvent):
-            #     for row in binlogevent.rows:
-            #         event = {"schema": binlogevent.schema, "table": binlogevent.table}
-            #
-            #         #if event['schema'] == schema:
-            #         if isinstance(binlogevent, DeleteRowsEvent):
-            #             event["action"] = "delete"
-            #             event["data"] = row["values"]
-            #             sql,rsql = gen_sql(event)
-            #             print('Execute :', sql)
-            #             print('Rollback :', rsql)
-            #             rollback_statments.append(rsql)
-            #
-            #         elif isinstance(binlogevent, UpdateRowsEvent):
-            #             event["action"] = "update"
-            #             event["after_values"] = row["after_values"]
-            #             event["before_values"] = row["before_values"]
-            #             sql, rsql = gen_sql(event)
-            #             print('Execute :', sql)
-            #             print('Rollback :', rsql)
-            #             rollback_statments.append(rsql)
-            #
-            #         elif isinstance(binlogevent, WriteRowsEvent):
-            #             event["action"] = "insert"
-            #             event["data"] = row["values"]
-            #             sql,rsql = gen_sql(event)
-            #             print('Execute :',sql)
-            #             print('Rollback :',rsql)
-            #             # print(get_event_name(binlogevent.event_type),json.dumps(event, cls=DateEncoder))
-            #             # print(json.dumps(event))
-            #             rollback_statments.append(rsql)
+            if binlogevent is not None:
+                # if isinstance(binlogevent, QueryEvent):
+                #     if bytes.decode(binlogevent.schema) == "hopson_hft":
+                #         # print('binlogevent=', binlogevent.dump())
+                #         # print('stream.log_file,stream.log_pos=', stream.log_file, stream.log_pos)
+                #         event = {"schema": bytes.decode(binlogevent.schema), "query": binlogevent.query.lower()}
+                #         print(event)
 
-            # if  stream.log_pos >= p_end_pos:
-            #     print('rollback_statements:', rollback_statments[::-1])
-            #     stream.close()
-            #     # sys.exit(0)
-            #     break
-            #
-            # if stream.log_pos + 31 == p_end_pos or stream.log_pos >=p_end_pos:
-            #     print('rollback_statements:', rollback_statments[::-1])
-            #     stream.close()
-            #     #sys.exit(0)
-            #     break
+                if isinstance(binlogevent, DeleteRowsEvent) or isinstance(binlogevent, UpdateRowsEvent) or isinstance(binlogevent, WriteRowsEvent):
+                    for row in binlogevent.rows:
+                        event = {"schema": binlogevent.schema, "table": binlogevent.table}
+                        if event['schema'] == p_db  and event['table'] == 'intel_order_discounted' :
+                            if isinstance(binlogevent, DeleteRowsEvent):
+                                event["action"] = "delete"
+                                event["data"] = row["values"]
+                                sql,rsql = gen_sql(event)
+                                print('EVENT:',event)
+                                print('DELETE:',sql)
 
-        # print('xxxxxxxxxxxxx')
-        # return rollback_statments[::-1]
+
+                            elif isinstance(binlogevent, UpdateRowsEvent):
+                                event["action"] = "update"
+                                event["after_values"] = row["after_values"]
+                                event["before_values"] = row["before_values"]
+                                sql, rsql = gen_sql(event)
+                                print('EVENT:', event)
+                                print('UPDATE:', sql)
+
+                            elif isinstance(binlogevent, WriteRowsEvent):
+                                event["action"] = "insert"
+                                event["data"] = row["values"]
+                                sql,rsql = gen_sql(event)
+                                print('EVENT:', event)
+                                print('INSERT:', sql)
+
 
     except Exception as e:
         traceback.print_exc()
@@ -239,11 +206,11 @@ def exec_sql(p_db,p_sql):
     return file,start_pos,stop_pos
 
 def main():
-    file = 'mysql-bin.000168'
-    db='test'
-    tab='xs',
-    start_pos=21894106
-    st = get_binlog(file, db,tab, start_pos)
+    file = 'mysql-bin.000219'
+    pos  = 439532704
+    db='hopson_hft'
+    tab='intel_order_discounted',
+    st = get_binlog(file,pos, db,tab)
     print('st=',st)
 
 if __name__ == "__main__":

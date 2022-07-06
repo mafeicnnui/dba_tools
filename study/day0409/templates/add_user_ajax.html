@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>新增用户ajax123123</title>
+    <link href="{{static_url('css/bootstrap.min.css')}}" rel="stylesheet" type="text/css" />
+</head>
+<body>
+  name:  <input type="text"   id="name"><br>
+  age:   <input type="text"   id="age"><br>
+  gender:<input type="text"   id="gender"><br>
+  <input type="button" id="addbtn" value="新增"/>
+</body>
+
+<script src="{{static_url('js/jquery-2.2.4.min.js')}}"></script>
+<script src="{{static_url('js/bootstrap.min.js')}}"></script>
+<script>
+     $(document).ready(function() {
+         $("#addbtn").click(function() {
+              $.ajax({
+                    url: "/user",
+                    type: "post",
+                    datatype: "json",
+                    data: {
+                        name  : $('#name').val(),
+                        age   : $('#age').val(),
+                        gender: $('#gender').val(),
+                    },
+                    success: function (dataSet) {
+                        console.log(dataSet)
+                        alert(dataSet.msg)
+                    },
+             })
+         });
+     })
+</script>
+
+</html>
