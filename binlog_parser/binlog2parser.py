@@ -19,29 +19,6 @@ def read_json(file):
          cfg = json.loads(f.read())
     return cfg
 
-
-'''
-#hst
-{
-    "db_ip":"rr-2zekl959654j1k49r.mysql.rds.aliyuncs.com",
-    "db_port":"3306",
-    "db_user":"apptong",
-    "db_pass":"4pH^2gp&amp;n3N6dgiRAlhs0fhnvq0xQ2&amp;D",
-    "db_service":"information_schema",
-    "db_charset":"utf8mb4"
-}
-#hft
-{
-    "db_ip":"rr-2ze8nqixl9wq6ei04.mysql.rds.aliyuncs.com",
-    "db_port":"3306",
-    "db_user":"huifutong_2019",
-    "db_pass":"GmTgNYdcCuVcrcsJlb8pHgOIOI5kl81",
-    "db_service":"information_schema",
-    "db_charset":"utf8mb4"
-}
-'''
-
-
 def get_db():
     cfg = read_json('binlog2parser.json')
     conn = pymysql.connect(host    = cfg['db_ip'],
@@ -105,13 +82,7 @@ def is_number(v):
     except:
         return False
 
-def parse_log(p_start_time = None,
-              p_stop_time =None,
-              p_start_pos = None,
-              p_stop_pos = None,
-              p_schema = None,
-              p_binlogfile= None,
-              p_debug = None):
+def parse_log(p_start_time = None,p_stop_time =None,p_start_pos = None,p_stop_pos = None,p_schema = None,p_binlogfile= None,p_debug = None):
     vv = ''
     cmd = ''
     if p_start_time is not None:
@@ -159,7 +130,6 @@ def parse_log(p_start_time = None,
     else:
        print('Resolve binlogfile failure!')
        return None
-
 
 def get_tab_pk_name(db,schema,table):
     cr = db.cursor()
@@ -245,17 +215,7 @@ def gen_rollback(event):
         return event
     return None
 
-def parsing(p_start_time = None,
-           p_stop_time = None,
-           p_start_pos = None,
-           p_stop_pos = None,
-           p_schema = None,
-           p_table = None,
-           p_binlogfile = None,
-           p_rollback = 'N',
-           p_max_rows = None,
-           p_debug = 'N'):
-
+def parsing(p_start_time = None,p_stop_time = None,p_start_pos = None,p_stop_pos = None,p_schema = None,p_table = None,p_binlogfile = None,p_rollback = 'N',p_max_rows = None,p_debug = 'N'):
     start_time = datetime.datetime.now()
     log = parse_log(p_start_time,p_stop_time,p_start_pos, p_stop_pos, p_schema,p_binlogfile,p_debug)
     if log is None:
@@ -331,6 +291,20 @@ def parsing(p_start_time = None,
 
     print('Elapse time:{}s'.format(get_seconds(start_time)))
 
+def parse_param():
+    parser = argparse.ArgumentParser(description='Resolve mysql binlogfile.')
+    parser.add_argument('--start_time', help='开始时间', default=None)
+    parser.add_argument('--stop_time', help='停止时间', default=None)
+    parser.add_argument('--start_pos', help='开始位置', default=None)
+    parser.add_argument('--stop_pos', help='停止位置', default=None)
+    parser.add_argument('--schema', help='解析库名', default=None)
+    parser.add_argument('--table', help='解析表名', default=None)
+    parser.add_argument('--binlogfile', help='binlog文件名', required=True)
+    parser.add_argument('--rollback', help='生成回滚语句', default='N')
+    parser.add_argument('--max_rows', help='最大解析日志行数', default=None)
+    parser.add_argument('--debug', help='调试模式', default='N')
+    args = parser.parse_args()
+    return args
 
 def test():
     '''
@@ -338,47 +312,32 @@ def test():
       2.more primary
       3.dml
       4 ddl
-
+      # hft
+        parser(None,
+               None,
+               None,
+               None,
+               'hft_settle_center',
+               'trade_order_task',
+               'mysql_172_17_41_177_3306_mysql-bin.000993',
+               'Y',
+               50000)
+       #hst
+        parsing(None,
+               None,
+               None,
+               None,
+               'hopsonone_park',
+               'orders',
+               'mysql_172.17.219.137_3306_mysql-bin.000844',
+               'Y',
+               None)
     '''
     pass
 
-
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
-    parser = argparse.ArgumentParser(description='Resolve mysql binlogfile.')
-    parser.add_argument('--start_time', help='开始时间',default=None)
-    parser.add_argument('--stop_time', help='停止时间',default=None)
-    parser.add_argument('--start_pos', help='开始位置',default=None)
-    parser.add_argument('--stop_pos', help='停止位置',default=None)
-    parser.add_argument('--schema', help='解析库名',default=None)
-    parser.add_argument('--table', help='解析表名',default=None)
-    parser.add_argument('--binlogfile', help='binlog文件名', required=True)
-    parser.add_argument('--rollback', help='生成回滚语句',default='N')
-    parser.add_argument('--max_rows', help='最大解析日志行数',default=None)
-    parser.add_argument('--debug', help='调试模式', default='N')
-    args = parser.parse_args()
-
-    # hft
-    # parser(None,
-    #        None,
-    #        None,
-    #        None,
-    #        'hft_settle_center',
-    #        'trade_order_task',
-    #        'mysql_172_17_41_177_3306_mysql-bin.000993',
-    #        'Y',
-    #        50000)
-    # hst
-    # parsing(None,
-    #        None,
-    #        None,
-    #        None,
-    #        'hopsonone_park',
-    #        'orders',
-    #        'mysql_172.17.219.137_3306_mysql-bin.000844',
-    #        'Y',
-    #        None)
-
+    args = parse_param()
     parsing(args.start_time,
            args.stop_time,
            args.start_pos,
