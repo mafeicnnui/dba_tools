@@ -1,0 +1,8 @@
+{
+    "db_ip":"rr-2ze8nqixl9wq6ei04.mysql.rds.aliyuncs.com",
+    "db_port":"3306",
+    "db_user":"huifutong_2019",
+    "db_pass":"GmTgNYdcCuVcrcsJlb8pHgOIOI5kl81",
+    "db_service":"information_schema",
+    "db_charset":"utf8mb4"
+}
