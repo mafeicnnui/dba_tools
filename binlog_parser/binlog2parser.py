@@ -60,6 +60,7 @@ def replace_column(p_log):
         p_log['sql'] = p_log['sql'].replace('@'+str(o['ordinal_position'])+'=',o['column_name']+'=')
     p_log['sql'] = p_log['sql'].replace('\n', '')
     p_log['sql'] = re.sub('\s+', ' ', p_log['sql'])
+
     if p_log['type'] == 'delete':
        p_log['sql'] =  p_log['sql'].replace(',',' AND ')
     return p_log
@@ -69,11 +70,12 @@ def get_seconds(b):
     return int((a-b).total_seconds())
 
 def get_rows(p_log):
-    count = -1
-    for count, line in enumerate(open(p_log, 'r', encoding="utf-8")):
-        pass
-    count += 1
-    return count
+    # count = -1
+    # for count, line in enumerate(open(p_log, 'r', encoding="utf-8")):
+    #     pass
+    # count += 1
+    c = os.popen('cat {} | wc -l'.format(p_log))
+    return int(c.read())
 
 def is_number(v):
     try:
@@ -225,49 +227,51 @@ def parsing(p_start_time = None,p_stop_time = None,p_start_pos = None,p_stop_pos
     rows= get_rows(log)
     print('logfile {} , total rows :{}'.format(log,rows))
     pattern = re.compile(r'(\/\*.+\*\/)')
-    file = open(log,'r', encoding="utf-8")
+    #file = open(log,'r', encoding="utf-8")
     contents=[]
     temp = {}
     row = 0
-    for line in file.readlines():
-       row = row + 1
-       print('\rProcessing sql : {}/{} , progress : {}%'.format(row,rows,round(round(row/rows,4)*100,4)),end='')
-       if line.find(' INSERT INTO `') ==0 or line.find(' UPDATE `') == 0 or line.find(' DELETE FROM `') == 0:
-           if temp.get('sql') is not None:
-              temp['sql'] = temp['sql'][0:-2]
-              if p_schema is not None and p_table is not None:
-                 if temp['db'] == p_schema and temp['table'] == p_table:
-                    contents.append(replace_column(temp))
-              elif p_schema is not None and p_table is None:
-                 if temp['db'] == p_schema :
-                    contents.append(replace_column(temp))
-              elif p_schema is None and p_table is not None:
-                 if temp['table'] == p_table :
-                    contents.append(replace_column(temp))
-              else:
-                  contents.append(replace_column(temp))
-           temp = {}
-           temp['type']  = get_type(line)
-           temp['db']    = get_schema(line)
-           temp['table'] = get_table(line)
-           temp['sql']   = line
-           temp['columns'] = get_column_mapping(get_db(),temp['db'],temp['table'])
-           continue
-       else:
-           if line.find(' SET') == 0:
-              temp['sql'] = temp['sql'][0:-2] + line
-           elif line.find(' WHERE') == 0:
-              temp['sql'] = temp['sql'] + line
+    with open(log,encoding='utf-8') as file:
+        for line in file:
+        #for line in file.readlines():
+           row = row + 1
+           print('\rProcessing sql : {}/{} , progress : {}%'.format(row,rows,round(round(row/rows,4)*100,4)),end='')
+           if line.find(' INSERT INTO `') ==0 or line.find(' UPDATE `') == 0 or line.find(' DELETE FROM `') == 0:
+               if temp.get('sql') is not None:
+                  temp['sql'] = temp['sql'][0:-2]
+                  if p_schema is not None and p_table is not None:
+                     if temp['db'] == p_schema and temp['table'] == p_table:
+                        contents.append(replace_column(temp))
+                  elif p_schema is not None and p_table is None:
+                     if temp['db'] == p_schema :
+                        contents.append(replace_column(temp))
+                  elif p_schema is None and p_table is not None:
+                     if temp['table'] == p_table :
+                        contents.append(replace_column(temp))
+                  else:
+                      contents.append(replace_column(temp))
+               temp = {}
+               temp['type']  = get_type(line)
+               temp['db']    = get_schema(line)
+               temp['table'] = get_table(line)
+               temp['sql']   = line
+               temp['columns'] = get_column_mapping(get_db(),temp['db'],temp['table'])
+               continue
            else:
-              if pattern.findall(line) != []:
-                 pre = re.sub(pattern, '', line)
-                 temp['sql'] = temp['sql']+pre[0:-1] + ',\n'
-              else:
-                 temp['sql'] = temp['sql']+line[0:-1]+',\n'
+               if line.find(' SET') == 0:
+                  temp['sql'] = temp['sql'][0:-2] + line
+               elif line.find(' WHERE') == 0:
+                  temp['sql'] = temp['sql'] + line
+               else:
+                  if pattern.findall(line) != []:
+                     pre = re.sub(pattern, '', line)
+                     temp['sql'] = temp['sql']+pre[0:-1] + ',\n'
+                  else:
+                     temp['sql'] = temp['sql']+line[0:-1]+',\n'
 
-       if p_max_rows is not None:
-           if row>p_max_rows:
-              break
+           if p_max_rows is not None:
+               if row>p_max_rows:
+                  break
 
     if p_table is not None:
        print('\nTable `{}` total {} rows.'.format(p_table,len(contents)))
