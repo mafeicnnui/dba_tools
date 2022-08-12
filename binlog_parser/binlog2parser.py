@@ -48,6 +48,9 @@ def get_type(line):
     else:
         return None
 
+def format_sql(v_sql):
+    return v_sql.replace("\\","\\\\").replace("'","\\'").replace('"','\\"')
+
 def get_column_mapping(db,schema,table):
     cr=db.cursor()
     st="SELECT ordinal_position,column_name FROM information_schema.columns WHERE table_schema='{}' AND table_name='{}'  ORDER BY ordinal_position"
@@ -55,46 +58,11 @@ def get_column_mapping(db,schema,table):
     rs=cr.fetchall()
     return rs
 
-def replace_column(p_log):
-    for o in p_log['columns']:
-        p_log['sql'] = p_log['sql'].replace('@'+str(o['ordinal_position'])+'=',o['column_name']+'=')
-    p_log['sql'] = p_log['sql'].replace('\n', '')
-    p_log['sql'] = re.sub('\s+', ' ', p_log['sql'])
-    col = parse_col_name_value(p_log)
-    if p_log['type'] == 'insert':
-        cols = ''
-        vals = ''
-        for k, v in col.items():
-            cols = cols + '`{}`,'.format(k)
-            vals = vals + "{},".format(v)
-        p_log['statement'] = 'insert into `{}`.`{}`({}) values ({})'.format(p_log['db'], p_log['table'], cols[0:-1],vals[0:-1])
-
-    if p_log['type'] == 'delete':
-       p_log['statement'] =  p_log['sql'].replace(',',' AND ')
-
-    if p_log['type'] == 'update':
-        pkn = get_tab_pk_name(get_db(), p_log['db'], p_log['table'])
-        vvv = ''
-        if pkn == '':
-            for k, v in col['old_values'].items():
-                vvv = vvv + '{} = {} and '.format(k, v)
-        else:
-            for k, v in col['old_values'].items():
-                if pkn.count(k) > 0:
-                    vvv = vvv + '{} = {} and '.format(k, v)
-        p_log['statement'] = 'update `{}`.`{}` set {} where {}'.\
-                             format(p_log['db'], p_log['table'],col['new_values_raw'], vvv[0:-5])
-    return p_log
-
 def get_seconds(b):
     a=datetime.datetime.now()
     return int((a-b).total_seconds())
 
 def get_rows(p_log):
-    # count = -1
-    # for count, line in enumerate(open(p_log, 'r', encoding="utf-8")):
-    #     pass
-    # count += 1
     c = os.popen('cat {} | wc -l'.format(p_log))
     return int(c.read())
 
@@ -105,7 +73,30 @@ def is_number(v):
     except:
         return False
 
-def parse_log(p_start_time = None,p_stop_time =None,p_start_pos = None,p_stop_pos = None,p_schema = None,p_binlogfile= None,p_debug = None):
+def get_tab_pk_name(db,schema,table):
+    cr = db.cursor()
+    st = """select column_name 
+                from information_schema.columns
+                where table_schema='{}'
+                  and table_name='{}' and column_key='PRI' order by ordinal_position
+            """.format(schema,table)
+    cr.execute(st)
+    rs = cr.fetchall()
+    v = ''
+    for i in list(rs):
+        v = v + i['column_name'] + ','
+    db.commit()
+    cr.close()
+    return v[0:-1]
+    pass
+
+def parse_log(p_start_time = None,
+              p_stop_time =None,
+              p_start_pos = None,
+              p_stop_pos = None,
+              p_schema = None,
+              p_binlogfile= None,
+              p_debug = None):
     vv = ''
     cmd = ''
     if p_start_time is not None:
@@ -154,29 +145,19 @@ def parse_log(p_start_time = None,p_stop_time =None,p_start_pos = None,p_stop_po
        print('Resolve binlogfile failure!')
        return None
 
-def get_tab_pk_name(db,schema,table):
-    cr = db.cursor()
-    st = """select column_name 
-                from information_schema.columns
-                where table_schema='{}'
-                  and table_name='{}' and column_key='PRI' order by ordinal_position
-            """.format(schema,table)
-    cr.execute(st)
-    rs = cr.fetchall()
-    v = ''
-    for i in list(rs):
-        v = v + i['column_name'] + ','
-    db.commit()
-    cr.close()
-    return v[0:-1]
-    pass
+def process_value(v):
+    if v.count("'") == 0:
+       return v
+    else:
+       return """'{}'""".format(format_sql(v[1:-1]))
+
 
 def parse_col_name_value(event):
     cols = {}
     if event['type'] == 'insert':
        t = event['sql'].split(' SET ')[1][0:-1]
        for i in t.split(' , '):
-           cols[i.split('=')[0]] = i.split('=')[1].strip()
+           cols[i.split('=')[0]] = process_value(i.split('=')[1].strip())
        return cols
 
     if event['type'] == 'update':
@@ -187,58 +168,106 @@ def parse_col_name_value(event):
        cols['old_values'] = {}
        cols['new_values'] = {}
        for i in o.split(' , '):
-           cols['old_values'][i.split('=')[0]] = i.split('=')[1].strip()
+           cols['old_values'][i.split('=')[0]] = process_value(i.split('=')[1].strip())
        for i in n.split(' , '):
-           cols['new_values'][i.split('=')[0]] = i.split('=')[1].strip()
+           cols['new_values'][i.split('=')[0]] = process_value(i.split('=')[1].strip())
        return cols
 
     if event['type'] == 'delete':
         t = event['sql'].split(' WHERE ')[1][0:-1]
         for i in t.split(' AND '):
-            cols[i.split('=')[0]] = i.split('=')[1].strip()
+            cols[i.split('=')[0]] = process_value(i.split('=')[1].strip())
         return cols
 
-def gen_rollback(event):
-    if event['type'] == 'insert':
-       pkn  = get_tab_pk_name(get_db(),event['db'],event['table'])
-       col  = parse_col_name_value(event)
-       vvv  = ''
-       if pkn == '':
-           for k, v in col.items():
-               vvv = vvv + '{} = {} and '.format(k, v)
-       else:
-           for k,v in col.items():
-              if pkn.count(k)>0:
-                  vvv = vvv + '{} = {} and '.format(k,v)
-       event['rollback'] = 'DELETE FROM `{}`.`{}` WHERE {}'.format(event['db'],event['table'],vvv[0:-5])
-       return event
-
-    if event['type'] == 'update':
-        pkn = get_tab_pk_name(get_db(), event['db'], event['table'])
-        col = parse_col_name_value(event)
-        vvv = ''
-        if pkn == '':
-            for k, v in col['new_values'].items():
-                vvv = vvv + '{} = {} and '.format(k, v)
-        else:
-            for k, v in col['new_values'].items():
-                if pkn.count(k) > 0:
-                    vvv = vvv + '{} = {} and '.format(k, v)
-        event['rollback'] = 'UPDATE `{}`.`{}` SET {} WHERE {}'.format(event['db'], event['table'], col['old_values_raw'],vvv[0:-5])
-        return event
-
-    if event['type'] == 'delete':
-        col = parse_col_name_value(event)
+def replace_column(p_log):
+    for o in p_log['columns']:
+        p_log['sql'] = p_log['sql'].replace('@'+str(o['ordinal_position'])+'=',o['column_name']+'=')
+    p_log['sql'] = p_log['sql'].replace('\n', '')
+    p_log['sql'] = re.sub('\s+', ' ', p_log['sql'])
+    col = parse_col_name_value(p_log)
+    if p_log['type'] == 'insert':
         cols = ''
         vals = ''
         for k, v in col.items():
             cols = cols + '`{}`,'.format(k)
             vals = vals + "{},".format(v)
-        event['rollback'] = 'INSERT INTO `{}`.`{}`({}) VALUES ({})'.format(event['db'], event['table'],cols[0:-1],vals[0:-1])
+        p_log['statement'] = 'insert into `{}`.`{}`({}) values ({})'.\
+                              format(p_log['db'], p_log['table'], cols[0:-1],vals[0:-1])
+
+    if p_log['type'] == 'delete':
+       p_log['statement'] =  p_log['sql'].replace(',',' AND ')
+
+    if p_log['type'] == 'update':
+        vvv = ''
+        if p_log.get('pkn') == '':
+            for k, v in col['old_values'].items():
+                vvv = vvv + '{} = {} and '.format(k, v)
+        else:
+            for k, v in col['old_values'].items():
+                if p_log.get('pkn').count(k) > 0:
+                    vvv = vvv + '{} = {} and '.format(k, v)
+        p_log['statement'] = 'update `{}`.`{}` set {} where {}'.\
+                             format(p_log['db'],
+                                    p_log['table'],
+                                    col['new_values_raw'],
+                                    vvv[0:-5])
+
+    p_log = gen_rollback(p_log)
+    return p_log
+
+def gen_rollback(event):
+    col = parse_col_name_value(event)
+    if event['type'] == 'insert':
+       vvv  = ''
+       if event.get('pkn') == '':
+           for k, v in col.items():
+               vvv = vvv + '{} = {} and '.format(k, v)
+       else:
+           for k,v in col.items():
+              if event.get('pkn').count(k)>0:
+                  vvv = vvv + '{} = {} and '.format(k,v)
+       event['rollback'] = 'delete from `{}`.`{}` where {}'.format(event['db'],event['table'],vvv[0:-5])
+       return event
+
+    if event['type'] == 'update':
+        vvv = ''
+        if event.get('pkn') == '':
+            for k, v in col['new_values'].items():
+                vvv = vvv + '{} = {} and '.format(k, v)
+        else:
+            for k, v in col['new_values'].items():
+                if event.get('pkn').count(k) > 0:
+                    vvv = vvv + '{} = {} and '.format(k, v)
+        event['rollback'] = 'update `{}`.`{}` set {} where {}'.\
+                             format(event['db'],
+                                    event['table'],
+                                    col['old_values_raw'],
+                                    vvv[0:-5])
+        return event
+
+    if event['type'] == 'delete':
+        cols = ''
+        vals = ''
+        for k, v in col.items():
+            cols = cols + '`{}`,'.format(k)
+            vals = vals + "{},".format(v)
+        event['rollback'] = 'insert into `{}`.`{}`({}) values ({})'.\
+                             format(event['db'],
+                                    event['table'],
+                                    cols[0:-1],format_sql(vals[0:-1]))
         return event
     return None
 
-def parsing(p_start_time = None,p_stop_time = None,p_start_pos = None,p_stop_pos = None,p_schema = None,p_table = None,p_binlogfile = None,p_rollback = 'N',p_max_rows = None,p_debug = 'N'):
+def parsing(p_start_time = None,
+            p_stop_time = None,
+            p_start_pos = None,
+            p_stop_pos = None,
+            p_schema = None,
+            p_table = None,
+            p_binlogfile = None,
+            p_rollback = 'N',
+            p_max_rows = None,
+            p_debug = 'N'):
     start_time = datetime.datetime.now()
     log = parse_log(p_start_time,p_stop_time,p_start_pos, p_stop_pos, p_schema,p_binlogfile,p_debug)
     if log is None:
@@ -246,6 +275,8 @@ def parsing(p_start_time = None,p_stop_time = None,p_start_pos = None,p_stop_pos
        sys.exit(0)
 
     rows= get_rows(log)
+    if p_max_rows is not None:
+        rows = int(p_max_rows)
     print('logfile {} , total rows :{}'.format(log,rows))
     pattern = re.compile(r'(\/\*.+\*\/)')
     contents=[]
@@ -275,6 +306,7 @@ def parsing(p_start_time = None,p_stop_time = None,p_start_pos = None,p_stop_pos
                temp['table'] = get_table(line)
                temp['sql']   = line
                temp['columns'] = get_column_mapping(get_db(),temp['db'],temp['table'])
+               temp['pkn']  = get_tab_pk_name(get_db(),temp['db'],temp['table'])
                continue
            else:
                if line.find(' SET') == 0:
@@ -297,17 +329,16 @@ def parsing(p_start_time = None,p_stop_time = None,p_start_pos = None,p_stop_pos
     else:
        print('\nTotal {} rows.'.format(len(contents)))
 
-    print('Wrtie sql file `{}`'.format(log.replace('.log','.sql')))
+    print('Wrtie sql file :`{}`'.format(log.replace('.log','.sql')))
     with open(log.replace('.log','.sql'), 'w', encoding="utf-8") as f:
        for i in contents:
-            f.write(i['sql_n'].strip()+';\n')
+            f.write(i['statement'].strip()+';\n')
 
     if p_rollback == 'Y':
-       print('Write rollback log file `{}`...'.format(log.replace('.log', '.rollback')))
-       for i in contents:
-           i = gen_rollback(i)
-           #print(json.dumps(i, ensure_ascii=False, indent=4, separators=(',', ':')))
-
+       # print('generate rollback statement please wait...')
+       # for i in contents:
+       #     i = gen_rollback(i)
+       print('Write rollback log file : `{}`...'.format(log.replace('.log', '.rollback.log')))
        with open(log.replace('.log', '.rollback'), 'w', encoding="utf-8") as f:
            for i in contents[::-1]:
                f.write(i['rollback'].strip() + ';\n')
@@ -355,6 +386,8 @@ def test():
                'mysql_172.17.219.137_3306_mysql-bin.000844',
                'Y',
                None)
+        print(json.dumps(i, ensure_ascii=False, indent=4, separators=(',', ':')))
+
     '''
     pass
 
