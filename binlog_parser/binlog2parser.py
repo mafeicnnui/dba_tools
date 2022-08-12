@@ -60,9 +60,30 @@ def replace_column(p_log):
         p_log['sql'] = p_log['sql'].replace('@'+str(o['ordinal_position'])+'=',o['column_name']+'=')
     p_log['sql'] = p_log['sql'].replace('\n', '')
     p_log['sql'] = re.sub('\s+', ' ', p_log['sql'])
+    col = parse_col_name_value(p_log)
+    if p_log['type'] == 'insert':
+        cols = ''
+        vals = ''
+        for k, v in col.items():
+            cols = cols + '`{}`,'.format(k)
+            vals = vals + "{},".format(v)
+        p_log['statement'] = 'insert into `{}`.`{}`({}) values ({})'.format(p_log['db'], p_log['table'], cols[0:-1],vals[0:-1])
 
     if p_log['type'] == 'delete':
-       p_log['sql'] =  p_log['sql'].replace(',',' AND ')
+       p_log['statement'] =  p_log['sql'].replace(',',' AND ')
+
+    if p_log['type'] == 'update':
+        pkn = get_tab_pk_name(get_db(), p_log['db'], p_log['table'])
+        vvv = ''
+        if pkn == '':
+            for k, v in col['old_values'].items():
+                vvv = vvv + '{} = {} and '.format(k, v)
+        else:
+            for k, v in col['old_values'].items():
+                if pkn.count(k) > 0:
+                    vvv = vvv + '{} = {} and '.format(k, v)
+        p_log['statement'] = 'update `{}`.`{}` set {} where {}'.\
+                             format(p_log['db'], p_log['table'],col['new_values_raw'], vvv[0:-5])
     return p_log
 
 def get_seconds(b):
@@ -227,13 +248,11 @@ def parsing(p_start_time = None,p_stop_time = None,p_start_pos = None,p_stop_pos
     rows= get_rows(log)
     print('logfile {} , total rows :{}'.format(log,rows))
     pattern = re.compile(r'(\/\*.+\*\/)')
-    #file = open(log,'r', encoding="utf-8")
     contents=[]
     temp = {}
     row = 0
     with open(log,encoding='utf-8') as file:
-        for line in file:
-        #for line in file.readlines():
+       for line in file:
            row = row + 1
            print('\rProcessing sql : {}/{} , progress : {}%'.format(row,rows,round(round(row/rows,4)*100,4)),end='')
            if line.find(' INSERT INTO `') ==0 or line.find(' UPDATE `') == 0 or line.find(' DELETE FROM `') == 0:
@@ -270,7 +289,7 @@ def parsing(p_start_time = None,p_stop_time = None,p_start_pos = None,p_stop_pos
                      temp['sql'] = temp['sql']+line[0:-1]+',\n'
 
            if p_max_rows is not None:
-               if row>p_max_rows:
+               if row>int(p_max_rows):
                   break
 
     if p_table is not None:
@@ -281,7 +300,7 @@ def parsing(p_start_time = None,p_stop_time = None,p_start_pos = None,p_stop_pos
     print('Wrtie sql file `{}`'.format(log.replace('.log','.sql')))
     with open(log.replace('.log','.sql'), 'w', encoding="utf-8") as f:
        for i in contents:
-            f.write(i['sql'].strip()+';\n')
+            f.write(i['sql_n'].strip()+';\n')
 
     if p_rollback == 'Y':
        print('Write rollback log file `{}`...'.format(log.replace('.log', '.rollback')))

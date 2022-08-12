@@ -26,12 +26,11 @@ from pymysqlreplication.row_event import (
 # }
 
 MYSQL_SETTINGS = {
-    "host"  : "10.2.39.40",
-    #"host"  : "rm-2ze9y75wip0929gy86o.mysql.rds.aliyuncs.com",
-    "port"  : 3306,
-    "user"  : "canal2021",
-    "passwd": "canal@Hopson2018",
-    "db"    : ""
+    "host"  : "bj-cynosdbmysql-grp-3k142zlc.sql.tencentcdb.com",
+    "port"  : 29333,
+    "user"  : "root",
+    "passwd": "Dev21@block2022",
+    "db"    : "test"
 }
 
 class DateEncoder(json.JSONEncoder):
@@ -131,7 +130,7 @@ def get_binlog(p_file,p_pos,p_db,p_tab):
                                     only_events=[QueryEvent,DeleteRowsEvent, UpdateRowsEvent, WriteRowsEvent],
                                     # only_tables=[p_db],
                                     # only_schemas=[p_tab],
-                                    server_id=100,
+                                    server_id=9999,
                                     blocking=True,
                                     resume_stream=True,
                                     log_file=p_file,
@@ -151,7 +150,10 @@ def get_binlog(p_file,p_pos,p_db,p_tab):
                 if isinstance(binlogevent, DeleteRowsEvent) or isinstance(binlogevent, UpdateRowsEvent) or isinstance(binlogevent, WriteRowsEvent):
                     for row in binlogevent.rows:
                         event = {"schema": binlogevent.schema, "table": binlogevent.table}
-                        if event['schema'] == p_db  and event['table'] == 'intel_order_discounted' :
+                        # print('row=',row,binlogevent)
+                        # print('event=',event)
+                        # print(event['schema'],p_db,event['schema'] == p_db,event['table'] ,p_tab,event['table'] == p_tab)
+                        if event['schema'] == p_db  and event['table'] == p_tab :
                             if isinstance(binlogevent, DeleteRowsEvent):
                                 event["action"] = "delete"
                                 event["data"] = row["values"]
@@ -206,10 +208,10 @@ def exec_sql(p_db,p_sql):
     return file,start_pos,stop_pos
 
 def main():
-    file = 'mysql-bin.000219'
-    pos  = 439532704
-    db='hopson_hft'
-    tab='intel_order_discounted',
+    file = 'mysql-bin.001001'
+    pos  = 11033
+    db='test'
+    tab='xs'
     st = get_binlog(file,pos, db,tab)
     print('st=',st)
 
