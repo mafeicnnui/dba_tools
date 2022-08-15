@@ -14,21 +14,23 @@ import warnings
 import datetime
 import argparse
 
-def read_json(file):
-    with open(file, 'r') as f:
-         cfg = json.loads(f.read())
-    return cfg
-
 def get_db():
     cfg = read_json('binlog2parser.json')
+    print(cfg)
     conn = pymysql.connect(host    = cfg['db_ip'],
                            port    = int(cfg['db_port']),
                            user    = cfg['db_user'],
                            passwd  = cfg['db_pass'],
                            db      = cfg['db_service'],
                            charset = cfg['db_charset'],
+                           autocommit = True,
                            cursorclass = pymysql.cursors.DictCursor)
     return conn
+
+def read_json(file):
+    with open(file, 'r') as f:
+         cfg = json.loads(f.read())
+    return cfg
 
 def get_schema(line):
     t = line.split(' ')[-1]
@@ -416,7 +418,7 @@ def parse_param():
     args = parser.parse_args()
     return args
 
-def test():
+def demo():
     '''
       1.one primary
       2.more primary
@@ -444,6 +446,13 @@ def test():
                None)
         print(json.dumps(i, ensure_ascii=False, indent=4, separators=(',', ':')))
 
+        db = get_db()
+        cr = db.cursor()
+        cr.execute("SELECT ordinal_position,column_name FROM information_schema.columns WHERE table_schema='bigdata_platform' AND table_name='coupons_member_relations'  ORDER BY ordinal_position")
+        rs = cr.fetchall()
+        print('rs=',rs)
+        for i in rs:
+            print(i)
     '''
     pass
 

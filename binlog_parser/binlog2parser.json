@@ -1,8 +1,8 @@
 {
     "db_ip":"10.2.39.80",
     "db_port":"3306",
-    "db_user":"hopsonone",
-    "db_pass":"hopsonone123",
+    "db_user":"root",
+    "db_pass":"root123456HOPSON",
     "db_service":"information_schema",
     "db_charset":"utf8mb4"
 }
