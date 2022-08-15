@@ -393,9 +393,6 @@ def parsing(p_start_time = None,
             f.write(i['statement'].strip()+';\n')
 
     if p_rollback == 'Y':
-       # print('generate rollback statement please wait...')
-       # for i in contents:
-       #     i = gen_rollback(i)
        print('Write rollback log file : `{}`...'.format(log.replace('.log', '.rollback.sql')))
        with open(log.replace('.log', '.rollback.sql'), 'w', encoding="utf-8") as f:
            for i in contents[::-1]:
