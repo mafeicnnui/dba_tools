@@ -48,9 +48,6 @@ def get_type(line):
     else:
         return None
 
-def format_sql(v_sql):
-    return v_sql.replace("\\","\\\\").replace("'","\\'").replace('"','\\"')
-
 def get_column_mapping(db,schema,table):
     cr=db.cursor()
     st="SELECT ordinal_position,column_name FROM information_schema.columns WHERE table_schema='{}' AND table_name='{}'  ORDER BY ordinal_position"
@@ -145,11 +142,20 @@ def parse_log(p_start_time = None,
        print('Resolve binlogfile failure!')
        return None
 
+def format_sql(v_sql):
+    return v_sql.replace("\\","\\\\").replace("'","\\'").replace('"','\\"')
+
 def process_value(v):
-    if v.count("'") == 0:
-       return v
+    if v[0] == "'" and v[-1] == "'":
+       return """{}""".format(format_sql(v[1:-1]))
+    elif is_number(v):
+       try:
+           if float(v) == int(float(v)):
+              return int(v)
+       except:
+          return float(v)
     else:
-       return """'{}'""".format(format_sql(v[1:-1]))
+       return v
 
 
 def parse_col_name_value(event):
@@ -190,26 +196,40 @@ def replace_column(p_log):
         vals = ''
         for k, v in col.items():
             cols = cols + '`{}`,'.format(k)
-            vals = vals + "{},".format(v)
-        p_log['statement'] = 'insert into `{}`.`{}`({}) values ({})'.\
-                              format(p_log['db'], p_log['table'], cols[0:-1],vals[0:-1])
+            if v=='NULL':
+                vals = vals + "{},".format(v)
+            elif isinstance(v,int) or isinstance(v,float):
+                vals = vals + "{},".format(v)
+            else:
+                vals = vals + "'{}',".format(v)
+        p_log['statement'] = 'insert into `{}`.`{}`({}) values ({})'.format(p_log['db'], p_log['table'], cols[0:-1],vals[0:-1])
 
     if p_log['type'] == 'delete':
        p_log['statement'] =  p_log['sql'].replace(',',' AND ')
 
     if p_log['type'] == 'update':
         vvv = ''
+        val = ''
         if p_log.get('pkn') == '':
             for k, v in col['old_values'].items():
                 vvv = vvv + '{} = {} and '.format(k, v)
         else:
             for k, v in col['old_values'].items():
                 if p_log.get('pkn').count(k) > 0:
-                    vvv = vvv + '{} = {} and '.format(k, v)
+                    vvv = vvv + '{} = {} and '.format(k,  v)
+
+            for k, v in col['new_values'].items():
+                if v == 'NULL':
+                    val = val + """{}={},""".format(k,v)
+                elif isinstance(v, int) or isinstance(v, float):
+                    val = val + """{}={},""".format(k,v)
+                else:
+                    val = val + """{}='{}',""".format(k, v)
+
         p_log['statement'] = 'update `{}`.`{}` set {} where {}'.\
                              format(p_log['db'],
                                     p_log['table'],
-                                    col['new_values_raw'],
+                                    val[0:-1],
                                     vvv[0:-5])
 
     p_log = gen_rollback(p_log)
@@ -221,11 +241,21 @@ def gen_rollback(event):
        vvv  = ''
        if event.get('pkn') == '':
            for k, v in col.items():
-               vvv = vvv + '{} = {} and '.format(k, v)
+               if v == 'NULL':
+                   vvv = vvv + """{} is {} and """.format(k, v)
+               elif isinstance(v, int) or isinstance(v, float):
+                   vvv = vvv + """{}={} and """.format(k, v)
+               else:
+                   vvv = vvv + """{}='{}' and """.format(k, v)
        else:
            for k,v in col.items():
               if event.get('pkn').count(k)>0:
-                  vvv = vvv + '{} = {} and '.format(k,v)
+                  if v == 'NULL':
+                      vvv = vvv + """{} is {} and """.format(k, v)
+                  elif isinstance(v, int) or isinstance(v, float):
+                      vvv = vvv + """{}={} and """.format(k, v)
+                  else:
+                      vvv = vvv + """{} = {} and """.format(k,v)
        event['rollback'] = 'delete from `{}`.`{}` where {}'.format(event['db'],event['table'],vvv[0:-5])
        return event
 
@@ -233,15 +263,36 @@ def gen_rollback(event):
         vvv = ''
         if event.get('pkn') == '':
             for k, v in col['new_values'].items():
-                vvv = vvv + '{} = {} and '.format(k, v)
+                if v == 'NULL':
+                    vvv = vvv + """{}={} and """.format(k, v)
+                elif isinstance(v, int) or isinstance(v, float):
+                    vvv = vvv + """{}={} and """.format(k, v)
+                else:
+                    vvv = vvv + """{}='{}' and """.format(k, v)
+
         else:
             for k, v in col['new_values'].items():
                 if event.get('pkn').count(k) > 0:
-                    vvv = vvv + '{} = {} and '.format(k, v)
+                    if v == 'NULL':
+                        vvv = vvv + """{} is {} and """.format(k, v)
+                    elif isinstance(v, int) or isinstance(v, float):
+                        vvv = vvv + """{}={} and """.format(k, v)
+                    else:
+                        vvv = vvv + """{}='{}' and """.format(k, v)
+        vals=''
+        for k, v in col['old_values'].items():
+            if v == 'NULL':
+                vals = vals + """{}={},""".format(k, v)
+            elif isinstance(v, int) or isinstance(v, float):
+                vals = vals + """{}={},""".format(k, v)
+            else:
+                vals = vals + """{}='{}',""".format(k, v)
+
+
         event['rollback'] = 'update `{}`.`{}` set {} where {}'.\
                              format(event['db'],
                                     event['table'],
-                                    col['old_values_raw'],
+                                    vals[0:-1],
                                     vvv[0:-5])
         return event
 
@@ -250,7 +301,12 @@ def gen_rollback(event):
         vals = ''
         for k, v in col.items():
             cols = cols + '`{}`,'.format(k)
-            vals = vals + "{},".format(v)
+            if v == 'NULL':
+                vals = vals + "{},".format(v)
+            elif isinstance(v, int) or isinstance(v, float):
+                vals = vals + "{},".format(v)
+            else:
+                vals = vals + "'{}',".format(v)
         event['rollback'] = 'insert into `{}`.`{}`({}) values ({})'.\
                              format(event['db'],
                                     event['table'],
@@ -338,8 +394,8 @@ def parsing(p_start_time = None,
        # print('generate rollback statement please wait...')
        # for i in contents:
        #     i = gen_rollback(i)
-       print('Write rollback log file : `{}`...'.format(log.replace('.log', '.rollback.log')))
-       with open(log.replace('.log', '.rollback'), 'w', encoding="utf-8") as f:
+       print('Write rollback log file : `{}`...'.format(log.replace('.log', '.rollback.sql')))
+       with open(log.replace('.log', '.rollback.sql'), 'w', encoding="utf-8") as f:
            for i in contents[::-1]:
                f.write(i['rollback'].strip() + ';\n')
 
