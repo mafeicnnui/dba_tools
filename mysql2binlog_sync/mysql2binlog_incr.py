@@ -24,7 +24,7 @@ from pymysqlreplication.row_event import (
 #     "passwd": "canal@Hopson2020",
 #     "db"    : "test"
 # }
-
+# tdsql-mysql-c
 MYSQL_SETTINGS = {
     "host"  : "bj-cynosdbmysql-grp-3k142zlc.sql.tencentcdb.com",
     "port"  : 29333,
@@ -32,6 +32,16 @@ MYSQL_SETTINGS = {
     "passwd": "Dev21@block2022",
     "db"    : "test"
 }
+
+# tdsql-mysql 分布式数据库
+MYSQL_SETTINGS = {
+    "host"  : "bj-tdsqlshard-b63jfglg.sql.tencentcdb.com",
+    "port"  : 26422,
+    "user"  : "admin",
+    "passwd": "Dev21@block2022",
+    "db"    : "test"
+}
+
 
 class DateEncoder(json.JSONEncoder):
     '''
@@ -208,9 +218,9 @@ def exec_sql(p_db,p_sql):
     return file,start_pos,stop_pos
 
 def main():
-    file = 'mysql-bin.001001'
-    pos  = 11033
-    db='test'
+    file = 'binlog.000002'
+    pos  = 767185
+    db='21block'
     tab='xs'
     st = get_binlog(file,pos, db,tab)
     print('st=',st)
