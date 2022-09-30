@@ -10,7 +10,7 @@ cfg = {
     "user": "root",
     "passwd": "root123HOPSON",
     "schema": "hopson_hft_doris",
-     "process_num" : 500,
+     "process_num" : 100,
       "sql":"""select io.business_name   AS businessName,
                    iop.party_business_id AS businessId,
                    iop.party_terminal_no AS terminalNo,
@@ -20,7 +20,7 @@ cfg = {
                    io.total_amount       AS totalAmount,
                    io.party_free_amount  AS partyFreeAmount,
                    io.received_amount    AS receivedAmount
-            from intel_order io join intel_order_payment iop on io.order_id = iop.order_id
+            from intel_order_old io join intel_order_payment iop on io.order_id = iop.order_id
             where io.business_id = '{}'
               and io.terminal_no = '{}'
               and iop.sub_code = 1
@@ -55,7 +55,7 @@ def get_thream_num():
                          date_format(MIN(payment_time),'%Y-%m-%d') AS payment_time,
                          date_format(DATE_ADD(MIN(payment_time),INTERVAL 30 DAY),'%Y-%m-%d') AS payment_time2,count(0) as rec
                  FROM `intel_order` 
-                  WHERE payment_time >='2022-01-01' AND payment_time <= '2022-03-01'
+                  WHERE payment_time >='2022-01-01' AND payment_time <= '2022-03-31'
                    AND STATUS=3 
                   group by business_id,terminal_no 
                   HAVING COUNT(0)>100 limit {}""".format(cfg['process_num']))
@@ -114,7 +114,7 @@ def main():
 
     for i in range(0, len(threads)):
         threads[i].start()
-        #time.sleep(0.1)
+        time.sleep(0.1)
 
     for i in range(0, len(threads)):
         threads[i].join()
