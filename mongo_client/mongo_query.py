@@ -214,6 +214,7 @@ class mongo_client:
                    # self.columns=?
                    return
                else:
+                   pattern = re.compile(r'([\"\']\$and[\"\']\s+:\s+)', re.I)
                    if pattern.findall(self.find_contents) != []:
                        print('>>`$and` found!')
                        t1 = re.split(r'([\"\']\$and[\"\']\s*:\s*)', self.find_contents, flags=re.I)
@@ -227,9 +228,6 @@ class mongo_client:
                    print('t2=',t2)
                    if t2 != []:
                       if t2[-1].count(']') == 0:
-                          print('t2[-1]=', t2[-1])
-                          print('t2[2:-1]=', t2[2:-1])
-                          print('t2[0:-1]=',','.join(t2[0:-1]))
                           w = ''.join(t2[0:-1])
                           self.where = {'$and': json.loads(w[0:w.find(']')+1])}
                           self.columns = json.loads('{'+t2[-1])
@@ -351,12 +349,12 @@ def test():
     # print('非_id查询，多值$in,某些列.....')
     # mongo.find_by_where('''db.monitorLog.find({"logType" : {$in:[1,2]}},{"terminalNo":1,"logType":1}).limit(5)''')
     print('$and操作符测试,所有列...')
-    mongo.find_by_where('''db.getCollection("monitorLog").find({ $and : [{"logType" : { "$gte" : 1 }}, {"logType" : { "$lte" : 3 }}] }).limit(10)''')
+    #mongo.find_by_where('''db.getCollection("monitorLog").find({ $and : [{"logType" : { "$gte" : 1 }}, {"logType" : { "$lte" : 3 }}] }).limit(10)''')
     #mongo.find_by_where('''db.getCollection("monitorLog").find({ $and : [{"logType" : { "$gte" : 1 }}, {"logType" : { "$lte" : 3 }}] },{"terminalNo":1,"ip":1}).limit(10)''')
     #mongo.find_by_where('''db.getCollection("monitorLog").find({ "$and" : [{"logType" : { "$gte" : 1 }}] }).limit(10)''')
     #mongo.find_by_where('''db.getCollection("monitorLog").find({ $and : [{"logType" : { "$gte" : 1 }}] }).limit(10)''')
     #mongo.find_by_where('''db.getCollection("monitorLog").find({ '$and'  :   [{"receiveLogDt" : { "$gte" : ISODate("2019-08-22 00:00:00") }}, {"receiveLogDt" : { "$lte" : ISODate("2019-08-22 23:59:59") }}]}).limit(3)''')
-    #mongo.find_by_where('''db.getCollection("monitorLog").find({ $and : [{"receiveLogDt" : { "$gte" : ISODate("2019-08-22 00:00:00") }}, {"receiveLogDt" : { "$lte" : ISODate("2019-08-22 23:59:59") }}]}).limit(3)''')
+    mongo.find_by_where('''db.getCollection("monitorLog").find({ $and : [{"receiveLogDt" : { "$gte" : ISODate("2019-08-22 00:00:00") }}, {"receiveLogDt" : { "$lte" : ISODate("2019-08-22 23:59:59") }}]}).limit(3)''')
 
 
 if __name__ == "__main__":
