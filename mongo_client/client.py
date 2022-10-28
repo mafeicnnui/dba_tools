@@ -112,6 +112,10 @@ def findByFilter(st):
 
 if __name__ == "__main__":
      st = """db.getCollection('menu').find({}).limit(5)"""
+
+     # 设计一个class
+     #st = """db.getCollection('menu').find({},{}).limit(5)""" 第一个{}是条件，第二个是字段列表
+     # 判断find中有几个{,如果大于1个，说明，是有条件的，然后分别获取条件和字段列表字典对象进行处理。
      #st = """db.getCollection('menu').find({"_id": ObjectId("5d40ead88505cf5bdbb376e8")})"""
      #st = """db.getCollection('menu').find({"menuId": 'm16'})"""
      res = findByFilter(st)

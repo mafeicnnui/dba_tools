@@ -70,7 +70,7 @@ cfg = {
                      from intel_order2 as io 
                        prewhere io.business_id = '{}'
                          and io.terminal_no = '{}'
-                         and io.create_time between '2022-01-01' and '2022-01-30'
+                         and io.create_time between '2022-01-01' and '2022-01-03'
                          and io.flow_status !=12) as io
                  join
                      (select   
@@ -81,7 +81,7 @@ cfg = {
                          iop.trans_way,
                          iop.scan_channel
                     from intel_order_payment as iop
-                     prewhere iop.create_time between '2022-01-01' and '2022-01-30'
+                     prewhere iop.create_time between '2022-01-01' and '2022-01-03'
                                  and iop.sub_code = 1
                                  and iop.trans_channel in (1, 2, 4)) as iop
                     on io.order_id = iop.order_id
