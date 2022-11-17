@@ -28,7 +28,6 @@ def datetime_timestamp(dt):
 
 def get_db():
     cfg = read_json('binlog2parser.json')
-    print(cfg)
     conn = pymysql.connect(host    = cfg['db_ip'],
                            port    = int(cfg['db_port']),
                            user    = cfg['db_user'],
@@ -373,6 +372,8 @@ def gen_rollback(event):
                 vals = vals + "{},".format(v)
             elif get_column_type(event, k) == 'timestamp':
                 vals = vals + "'{}',".format(timestamp_datetime(int(v)))
+            elif str(v).count('(') == 1:
+                vals = vals + "{},".format(v.split('(')[0])
             elif isinstance(v, int) or isinstance(v, float):
                 vals = vals + "{},".format(v)
             else:
