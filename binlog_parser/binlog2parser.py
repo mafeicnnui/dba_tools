@@ -355,7 +355,6 @@ def gen_rollback(event):
             else:
                 vals = vals + """`{}`='{}',""".format(k, v)
 
-
         event['rollback'] = 'update `{}`.`{}` set {} where {}'.\
                              format(event['db'],
                                     event['table'],
