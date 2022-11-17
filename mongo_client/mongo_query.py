@@ -18,6 +18,15 @@ config = {
     'db':'hopson_hft'
 }
 
+# config = {
+#     'ip':'101.42.136.66',
+#     'port':'48014',
+#     'auth_db':'admin',
+#     'db':'block-push',
+#     'user':'pro21block_ro',
+#     'password':'bacmC59JKGxZDNdw'
+# }
+
 def repl_str1(matched):
     value = matched.group()
     return value.replace('ISODate(','').replace(')','')
@@ -28,11 +37,12 @@ def repl_str2(matched):
 
 class mongo_client:
 
-    def __init__(self,ip,port,db=None,user=None,password=None):
+    def __init__(self,ip,port,auth_db=None,db=None,user=None,password=None):
         self.ip = ip
         self.port =port
         self.user = user
         self.password = password
+        self.auth_db=auth_db
         self.db = db
         self.client,self.conn = self.get_db()
         self.where = None
@@ -65,18 +75,21 @@ class mongo_client:
 
     def get_db(self):
         conn = pymongo.MongoClient('mongodb://{0}:{1}/'.format(self.ip, int(self.port)))
-        if self.db is not None:
-           db = conn[self.db]
-           if self.user is not None and self.password is not None:
+        if self.auth_db is not None:
+           db = conn[self.auth_db]
+           if self.user is not None  and self.user !='' and self.password is not None and self.password !='':
                db.authenticate(self.user, self.password)
-               return conn,db
+               return conn,conn[self.db]
            else:
                return conn,db
         else:
-          return conn,conn['admin']
+          return conn,conn[self.db]
 
     def get_databases(self):
         return self.client.list_database_names()
+
+    def get_collections(self,p_db):
+        return self.client[p_db].list_collection_names()
 
     def get_collection_name(self,p_sql):
         pattern1 = re.compile(r'(db\..*\.)', re.I)
@@ -133,13 +146,13 @@ class mongo_client:
 
         # resolve _id,only support $in operator
         if self.find_contents.find('_id') >= 0 :
-            pattern = re.compile(r'(\}\s*,\s*\{)', re.I)
-            if pattern.findall(self.find_contents) == []:
-                id = self.find_contents.split('ObjectId(')[1].split(')')[0].replace('"', '')
-                self.where = {'_id': ObjectId(id)}
-                return
+            # pattern = re.compile(r'(\}\s*,\s*\{)', re.I)
+            # if pattern.findall(self.find_contents) == []:
+            #     id = self.find_contents.split('ObjectId(')[1].split(')')[0].replace('"', '')
+            #     self.where = {'_id': ObjectId(id)}
+            #     return
 
-            elif self.find_contents.count('$in') == 0 :
+            if self.find_contents.count('$in') == 0 :
                 print('$in = 0 && _id...')
                 id = self.find_contents.split('ObjectId(')[1].split(')')[0].replace('"', '')
                 pattern = re.compile(r'(\}\s*,\s*\{)', re.I)
@@ -159,6 +172,8 @@ class mongo_client:
                    id =  o.replace('ObjectId','').replace('(','').replace(')','').replace("'","").replace('"','').strip()
                    inid.append(ObjectId(id))
                 self.where = {'_id': {'$in' : inid }}
+                print('inid=',inid)
+                print('self.where=',self.where)
 
                 pattern = re.compile(r'(\}\s*,\s*\{)', re.I)
                 if pattern.findall(self.find_contents) != []:
@@ -225,7 +240,6 @@ class mongo_client:
                        t1 = re.split(r'(\$and\s*:\s*)', self.find_contents, flags=re.I)
 
                    t2 = re.split(r'(\}\s*,\s*\{)', t1[2], flags=re.I)
-                   print('t2=',t2)
                    if t2 != []:
                       if t2[-1].count(']') == 0:
                           w = ''.join(t2[0:-1])
@@ -297,17 +311,23 @@ class mongo_client:
 '''
 
 
-def test():
+def A():
     mongo = mongo_client(config['ip'], config['port'], config['db'])
-    # print('[打印数据库名列表]....')
-    # print(mongo.get_databases())
+    #mongo.conn.list_collection_names()
+    print('[打印数据库名列表]....')
+    print(mongo.get_databases())
+    print('[打印集合列表]....')
+    rs= mongo.get_collections('hopson_hft')
+    print('rs=',rs)
+    # rs = mongo.get_collections('hopsonone_park')
+    # print('rs=', rs)
 
     # print('[一个条件，所有列.....]')
     # print('\nDEMO1：','''db.monitorLog.find({"terminalNo":"10000201"}).limit(5)''')
     # mongo.find_by_where('''db.monitorLog.find({"terminalNo":"10000201"}).limit(5)''')
     # print('\nDEMO2：','''db.getCollection('monitorLog').find({"terminalNo":"10000201"}).limit(5)''')
     # mongo.find_by_where('''db.getCollection('monitorLog').find({"terminalNo":"10000201"}).limit(5)''')
-
+    #
     # print('一个条件，某些列.....')
     # print('\nDEMO1：','''db.monitorLog.find({"terminalNo":"10000201"},{"terminalNo":1}).limit(5)''')
     # mongo.find_by_where('''db.monitorLog.find({"terminalNo":"10000201"},{"terminalNo":1}).limit(5)''')
@@ -317,45 +337,57 @@ def test():
     # mongo.find_by_where('''db.getCollection('monitorLog').find({"terminalNo":"10000201"},{"terminalNo":1}).limit(5)''')
     # print('\nDEMO4：','''db.getCollection('monitorLog').find({"terminalNo":"10000201"},{"terminalNo":1,"ip":1}).limit(5)''')
     # mongo.find_by_where('''db.getCollection('monitorLog').find({"terminalNo":"10000201"},{"terminalNo":1,"ip":1}).limit(5)''')
-
+    #
     # print('所有数据，所有列,部分行.....')
     # print('DEMO1：','''db.monitorLog.find({}).limit(10)''')
     # mongo.find_by_where('''db.monitorLog.find({}).limit(10)''')
     # print('DEMO2：', '''db.getCollection('monitorLog').find({}).limit(5)''')
     # mongo.find_by_where('''db.getCollection('monitorLog').find({}).limit(5)''')
-
+    #
     # print('所有数据，某些列.....')
     # print('DEMO1：','''db.monitorLog.find({},{"terminalNo":1}).limit(10)''')
     # mongo.find_by_where('''db.monitorLog.find({},{"terminalNo":1}).limit(10)''')
-
+    #
     # print('_id查询，一个值，所有列.....')
     # print('DEMO1：','''db.monitorLog.find({'_id':ObjectId("5d5e5f338488d5000145b343")})''')
     # mongo.find_by_where('''db.monitorLog.find({'_id':ObjectId("5d5e5f338488d5000145b343")})''')
-    # print('DEMO2：','''db.monitorLog.find({'_id':ObjectId("5d5e5f338488d5000145b343")})''')
+    # print('DEMO2：','''db.getCollection('monitorLog').find({'_id':ObjectId("5d5e5f338488d5000145b343")})''')
     # mongo.find_by_where('''db.getCollection('monitorLog').find({'_id':ObjectId("5d5e5f338488d5000145b343")})''')
-
-    # print('_id查询，一个值$,某些列.....')
-    # mongo.find_by_where('''db.monitorLog.find({'_id':ObjectId("5d5e5f338488d5000145b343")},{"terminalNo":1}).limit(5)''')
-
-    # print('_id查询，多值$in,所有列.....')
-    # mongo.find_by_where('''db.monitorLog.find({"_id":{$in:[ObjectId("5d5e5f338488d5000145b343"), ObjectId("5d5e5fc88488d5000145b344")]}}).limit(3)''')
-
-    # print('_id查询，多值$in,某些列.....')
-    # mongo.find_by_where('''db.monitorLog.find({"_id" : {$in:[ObjectId("5d5e5f338488d5000145b343"),ObjectId("5d5e5fc88488d5000145b344")]}},{"terminalNo":1}).limit(5)''')
     #
+    # print('_id查询，一个值$,某些列.....')
+    # mongo.find_by_where('''db.monitorLog.find({'_id':ObjectId("5d5e5f338488d5000145b343")},{"terminalNo":1}}).limit(5)''')
+
+    print('_id查询，多值$in,所有列.....')  # 只返回一行，需排查原因
+    #mongo.find_by_where('''db.monitorLog.find({"_id":{$in:[ObjectId("5d5e5f338488d5000145b343"), ObjectId("5d5e5fc88488d5000145b344")]}}).limit(3)''')
+    mongo.find_by_where('''db.monitorLog.find({"_id":{$in:[ObjectId("5d5e5fc88488d5000145b344")]}}).limit(3)''')
+
+
+    print('_id查询，多值$in,某些列.....')
+    #mongo.find_by_where('''db.monitorLog.find({"_id" : {$in:[ObjectId("5d5e5f338488d5000145b343"),ObjectId("5d5e5fc88488d5000145b344")]}},{"terminalNo":1}).limit(5)''')
+
     # print('非_id查询，单值,某些列.....')
     # mongo.find_by_where('''db.monitorLog.find({"logType" : 1},{"terminalNo":1,"logType":1}).limit(5)''')
     #
     # print('非_id查询，多值$in,某些列.....')
     # mongo.find_by_where('''db.monitorLog.find({"logType" : {$in:[1,2]}},{"terminalNo":1,"logType":1}).limit(5)''')
-    print('$and操作符测试,所有列...')
-    #mongo.find_by_where('''db.getCollection("monitorLog").find({ $and : [{"logType" : { "$gte" : 1 }}, {"logType" : { "$lte" : 3 }}] }).limit(10)''')
-    #mongo.find_by_where('''db.getCollection("monitorLog").find({ $and : [{"logType" : { "$gte" : 1 }}, {"logType" : { "$lte" : 3 }}] },{"terminalNo":1,"ip":1}).limit(10)''')
-    #mongo.find_by_where('''db.getCollection("monitorLog").find({ "$and" : [{"logType" : { "$gte" : 1 }}] }).limit(10)''')
-    #mongo.find_by_where('''db.getCollection("monitorLog").find({ $and : [{"logType" : { "$gte" : 1 }}] }).limit(10)''')
-    #mongo.find_by_where('''db.getCollection("monitorLog").find({ '$and'  :   [{"receiveLogDt" : { "$gte" : ISODate("2019-08-22 00:00:00") }}, {"receiveLogDt" : { "$lte" : ISODate("2019-08-22 23:59:59") }}]}).limit(3)''')
-    mongo.find_by_where('''db.getCollection("monitorLog").find({ $and : [{"receiveLogDt" : { "$gte" : ISODate("2019-08-22 00:00:00") }}, {"receiveLogDt" : { "$lte" : ISODate("2019-08-22 23:59:59") }}]}).limit(3)''')
+    # print('$and操作符测试,所有列...')
+    # mongo.find_by_where('''db.getCollection("monitorLog").find({ $and : [{"logType" : { "$gte" : 1 }}, {"logType" : { "$lte" : 3 }}] }).limit(10)''')
+    # mongo.find_by_where('''db.getCollection("monitorLog").find({ $and : [{"logType" : { "$gte" : 1 }}, {"logType" : { "$lte" : 3 }}] },{"terminalNo":1,"ip":1}).limit(10)''')
+    # mongo.find_by_where('''db.getCollection("monitorLog").find({ "$and" : [{"logType" : { "$gte" : 1 }}] }).limit(10)''')
+    # mongo.find_by_where('''db.getCollection("monitorLog").find({ $and : [{"logType" : { "$gte" : 1 }}] }).limit(10)''')
+    # mongo.find_by_where('''db.getCollection("monitorLog").find({ '$and'  :   [{"receiveLogDt" : { "$gte" : ISODate("2019-08-22 00:00:00") }}, {"receiveLogDt" : { "$lte" : ISODate("2019-08-22 23:59:59") }}]}).limit(3)''')
+    # mongo.find_by_where('''db.getCollection("monitorLog").find({ $and : [{"receiveLogDt" : { "$gte" : ISODate("2019-08-22 00:00:00") }}, {"receiveLogDt" : { "$lte" : ISODate("2019-08-22 23:59:59") }}]}).limit(3)''')
 
+
+def B():
+    mongo = mongo_client(config['ip'], config['port'], config['auth_db'], config['db'],config['user'],config['password'])
+    print('[打印数据库名列表]....')
+    print(mongo.get_databases())
+    print('[打印集合列表]....')
+    rs = mongo.get_collections('block-push')
+    print('rs=', rs)
+    mongo.find_by_where('''db.push_message.find({}).limit(5)''')
 
 if __name__ == "__main__":
-    test()
+    A()
+    #test2()

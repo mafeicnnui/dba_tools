@@ -23,18 +23,18 @@ if __name__ == "__main__":
     #                        'hopsonone',
     #                        'hopsonone123')
 
-    # db = get_ds_mysql_dict('rr-2zekl959654j1k49r6o.mysql.rds.aliyuncs.com',
-    #                        '3306',
-    #                        'information_schema',
-    #                        'apptong',
-    #                        '4pH^2gp&amp;n3N6dgiRAlhs0fhnvq0xQ2&amp;D')
-    n_market_id=123456
-
-    db = get_ds_mysql_dict('rr-2ze8nqixl9wq6ei041o.mysql.rds.aliyuncs.com',
+    db = get_ds_mysql_dict('rr-2zekl959654j1k49r6o.mysql.rds.aliyuncs.com',
                            '3306',
                            'information_schema',
-                           'hft_ro',
-                           '8SezZdtuoUTJ5MBLXdcD6XJv5czwBkD')
+                           'apptong',
+                           '4pH^2gp&amp;n3N6dgiRAlhs0fhnvq0xQ2&amp;D')
+    n_market_id=123456
+
+    # db = get_ds_mysql_dict('rr-2ze8nqixl9wq6ei041o.mysql.rds.aliyuncs.com',
+    #                        '3306',
+    #                        'information_schema',
+    #                        'hft_ro',
+    #                        '8SezZdtuoUTJ5MBLXdcD6XJv5czwBkD')
 
     logging.basicConfig(filename='query_market_id.log'.format(datetime.datetime.now().strftime("%Y-%m-%d")),
                         format='[%(asctime)s-%(levelname)s:%(message)s]',
@@ -52,7 +52,9 @@ if __name__ == "__main__":
             rs=cr.fetchone()
             if rs['rec'] >0:
                 #logging.info('{}.{}'.format(r['table_schema'], r['table_name']))
-                print(r['table_schema'], r['table_name'],rs['rec'])
+                #print('update `{}`.`{}` set market_id=320 where market_id= 30300 ; '.format(r['table_schema'], r['table_name']),' update rows:',rs['rec'])
+                #print('update `{}`.`{}` set market_id=320 where market_id= 30300 ; '.format(r['table_schema'],r['table_name']))
+                print("""mysqldump -uapptong -p'4pH^2gp&amp;n3N6dgiRAlhs0fhnvq0xQ2&amp;D' -hrm-2ze9y75wip0929gy8.mysql.rds.aliyuncs.com  --single-transaction --set-gtid-purged=OFF {} {} >{}.{}.sql""".format(r['table_schema'], r['table_name'],r['table_schema'], r['table_name']))
         except:
             traceback.print_exc()
             logging.error('ERROR:{}.{}'.format(r['table_schema'], r['table_name']))

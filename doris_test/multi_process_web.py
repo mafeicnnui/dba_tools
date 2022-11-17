@@ -7,13 +7,13 @@ import traceback
 import json
 
 cfg = {
-    "host": "10.2.39.144",
-    "port": "9030",
+    "host": "10.2.39.40",
+    "port": "3306",
     "user": "root",
-    "passwd": "",
+    "passwd": "root123HOPSON",
     "schema": "hopson_hft_dev",
-    "process_num" : 500,
-    "api" : "http://10.2.39.74:40012/bff-app/trade/statistical/trans/summary?businessId={}&terminalNo={}&startDt={}&endDt={}"
+    "process_num" : 30,
+    "api" : "http://10.2.39.75:40012/bff-app/trade/statistical/trans/summary?businessId={}&terminalNo={}&startDt={}&endDt={}"
 }
 
 RES = []
@@ -43,7 +43,7 @@ def get_thream_num():
     cr.execute("""SELECT business_id,
                          terminal_no,
                          date_format(MIN(payment_time),'%Y-%m-%d') AS payment_time,
-                         date_format(DATE_ADD(MIN(payment_time),INTERVAL 90 DAY),'%Y-%m-%d') AS payment_time2,count(0) as rec
+                         date_format(DATE_ADD(MIN(payment_time),INTERVAL 30 DAY),'%Y-%m-%d') AS payment_time2,count(0) as rec
                  FROM `intel_order` 
                   WHERE payment_time >='2022-01-01'
                    AND STATUS=3 
@@ -70,7 +70,7 @@ def test(cfg,counter,thread_num,):
                 "end_time"  : end_time.strftime("%Y-%m-%d %H:%M:%S.%f"),
                 "elaspse_time": get_seconds(start_time),
                 "rows":thread_num['rec'],
-                "data"  : msg['data'],
+                #"data"  : msg['data'],
                 "error": False
             }
         )
@@ -83,7 +83,7 @@ def test(cfg,counter,thread_num,):
                 "end_time": '',
                 "elaspse_time": 0,
                 "rows": 0,
-                "data": msg,
+                #"data": msg,
                 "error":True,
                 "message":traceback.format_exc()
             }
@@ -92,12 +92,13 @@ def test(cfg,counter,thread_num,):
 
 
 def main():
-    cfg['process_num'] = len(get_thream_num())
+    res = get_thream_num()
+    cfg['process_num'] = len(res)
     print('threading number:',cfg['process_num'])
 
     threads = []
     i_counter = 1
-    for thread_num in get_thream_num():
+    for thread_num in res:
         print('start threading for {}...'.format(i_counter))
         thread = threading.Thread(target=test, args=(cfg, i_counter,thread_num,))
         threads.append(thread)
@@ -105,7 +106,7 @@ def main():
 
     for i in range(0, len(threads)):
         threads[i].start()
-        #time.sleep(0.01)
+        #time.sleep(0.1)
 
     for i in range(0, len(threads)):
         threads[i].join()

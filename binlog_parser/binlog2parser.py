@@ -8,11 +8,23 @@
 import os
 import re
 import sys
+import time
 import json
 import pymysql
 import warnings
 import datetime
 import argparse
+
+def timestamp_datetime(value):
+ format = '%Y-%m-%d %H:%M:%S'
+ value = time.localtime(value)
+ dt = time.strftime(format, value)
+ return dt
+
+def datetime_timestamp(dt):
+  time.strptime(dt, '%Y-%m-%d %H:%M:%S')
+  s = time.mktime(time.strptime(dt, '%Y-%m-%d %H:%M:%S'))
+  return int(s)
 
 def get_db():
     cfg = read_json('binlog2parser.json')
@@ -52,7 +64,7 @@ def get_type(line):
 
 def get_column_mapping(db,schema,table):
     cr=db.cursor()
-    st="SELECT ordinal_position,column_name FROM information_schema.columns WHERE table_schema='{}' AND table_name='{}'  ORDER BY ordinal_position"
+    st="SELECT ordinal_position,column_name,data_type FROM information_schema.columns WHERE table_schema='{}' AND table_name='{}'  ORDER BY ordinal_position"
     cr.execute(st.format(schema,table))
     rs=cr.fetchall()
     return rs
@@ -145,7 +157,7 @@ def parse_log(p_start_time = None,
        return None
 
 def format_sql(v_sql):
-    return v_sql.replace("\\","\\\\").replace("'","\\'").replace('"','\\"')
+    return v_sql.replace("\\","\\\\").replace("'","\\'").replace('"','\\"').replace("\\'","'")
 
 def process_value(v):
     if v[0] == "'" and v[-1] == "'":
@@ -159,6 +171,11 @@ def process_value(v):
     else:
        return v
 
+def get_column_type(p_log,p_col):
+    for o in p_log['columns']:
+       if o['column_name'] == p_col :
+          return o['data_type']
+    return None
 
 def parse_col_name_value(event):
     cols = {}
@@ -183,7 +200,7 @@ def parse_col_name_value(event):
 
     if event['type'] == 'delete':
         t = event['sql'].split(' WHERE ')[1][0:-1]
-        for i in t.split(' AND '):
+        for i in t.split(' , '):
             cols[i.split('=')[0]] = process_value(i.split('=')[1].strip())
         return cols
 
@@ -192,6 +209,7 @@ def replace_column(p_log):
         p_log['sql'] = p_log['sql'].replace('@'+str(o['ordinal_position'])+'=',o['column_name']+'=')
     p_log['sql'] = p_log['sql'].replace('\n', '')
     p_log['sql'] = re.sub('\s+', ' ', p_log['sql'])
+
     col = parse_col_name_value(p_log)
     if p_log['type'] == 'insert':
         cols = ''
@@ -200,6 +218,8 @@ def replace_column(p_log):
             cols = cols + '`{}`,'.format(k)
             if v=='NULL':
                 vals = vals + "{},".format(v)
+            elif get_column_type(p_log,k) == 'timestamp':
+                vals = vals + "'{}',".format(timestamp_datetime(int(v)))
             elif isinstance(v,int) or isinstance(v,float):
                 vals = vals + "{},".format(v)
             else:
@@ -207,22 +227,58 @@ def replace_column(p_log):
         p_log['statement'] = 'insert into `{}`.`{}`({}) values ({})'.format(p_log['db'], p_log['table'], cols[0:-1],vals[0:-1])
 
     if p_log['type'] == 'delete':
-       p_log['statement'] =  p_log['sql'].replace(',',' AND ')
+        vvv = ''
+        if p_log.get('pkn') == '':
+            for k, v in col.items():
+                if v == 'NULL':
+                   vvv = vvv + '{} is null and '.format(k, v)
+                elif get_column_type(p_log, k) == 'timestamp':
+                   vvv = vvv + """{} = '{}' and """.format(k, timestamp_datetime(int(v)))
+                elif isinstance(v, int) or isinstance(v, float):
+                   vvv = vvv + '{} = {} and '.format(k, v)
+                else:
+                   vvv = vvv + """{} = '{}' and """.format(k,  v)
+        else:
+            for k, v in col.items():
+                if p_log.get('pkn').count(k) > 0:
+                    if v == 'NULL':
+                       vvv = vvv + '{} is null and '.format(k, v)
+                    elif get_column_type(p_log, k) == 'timestamp':
+                       vvv = vvv + """{} = '{}' and """.format(k, timestamp_datetime(int(v)))
+                    elif isinstance(v, int) or isinstance(v, float):
+                       vvv = vvv + '{} = {} and '.format(k, v)
+                    else:
+                       vvv = vvv + """{} = '{}' and """.format(k,  v)
+        p_log['statement'] = 'delete from `{}`.`{}` where {}'.format(p_log['db'],p_log['table'],vvv[0:-5])
 
     if p_log['type'] == 'update':
         vvv = ''
         val = ''
         if p_log.get('pkn') == '':
             for k, v in col['old_values'].items():
-                vvv = vvv + '{} = {} and '.format(k, v)
+                if v == 'NULL':
+                    vvv = vvv + '{} is null and '.format(k, v)
+                elif get_column_type(p_log, k) == 'timestamp':
+                    vvv = vvv + """{}='{}' and """.format(k, timestamp_datetime(int(v)))
+                elif isinstance(v, int) or isinstance(v, float):
+                    vvv = vvv + '{}={} and '.format(k, v)
+                else:
+                    vvv = vvv + """{}={} and """.format(k, v)
         else:
             for k, v in col['old_values'].items():
                 if p_log.get('pkn').count(k) > 0:
-                    vvv = vvv + '{} = {} and '.format(k,  v)
+                    if get_column_type(p_log, k) == 'timestamp':
+                        vvv = vvv + """{}='{}' and """.format(k, timestamp_datetime(int(v)))
+                    elif isinstance(v, int) or isinstance(v, float):
+                        vvv = vvv + '{}={} and '.format(k, v)
+                    else:
+                        vvv = vvv + """{}='{}' and """.format(k, v)
 
             for k, v in col['new_values'].items():
                 if v == 'NULL':
                     val = val + """{}={},""".format(k,v)
+                elif get_column_type(p_log, k) == 'timestamp':
+                    vvv = vvv + """{}='{}',""".format(k, timestamp_datetime(int(v)))
                 elif isinstance(v, int) or isinstance(v, float):
                     val = val + """{}={},""".format(k,v)
                 else:
@@ -245,6 +301,8 @@ def gen_rollback(event):
            for k, v in col.items():
                if v == 'NULL':
                    vvv = vvv + """{} is {} and """.format(k, v)
+               elif get_column_type(event, k) == 'timestamp':
+                   vvv = vvv + """{}='{}' and """.format(k, timestamp_datetime(int(v)))
                elif isinstance(v, int) or isinstance(v, float):
                    vvv = vvv + """{}={} and """.format(k, v)
                else:
@@ -254,6 +312,8 @@ def gen_rollback(event):
               if event.get('pkn').count(k)>0:
                   if v == 'NULL':
                       vvv = vvv + """{} is {} and """.format(k, v)
+                  elif get_column_type(event, k) == 'timestamp':
+                      vvv = vvv + """{}='{}' and """.format(k, timestamp_datetime(int(v)))
                   elif isinstance(v, int) or isinstance(v, float):
                       vvv = vvv + """{}={} and """.format(k, v)
                   else:
@@ -266,29 +326,35 @@ def gen_rollback(event):
         if event.get('pkn') == '':
             for k, v in col['new_values'].items():
                 if v == 'NULL':
-                    vvv = vvv + """{}={} and """.format(k, v)
+                    vvv = vvv + """`{}`={} and """.format(k, v)
+                elif get_column_type(event, k) == 'timestamp':
+                    vvv = vvv + """`{}`='{}' and """.format(k, timestamp_datetime(int(v)))
                 elif isinstance(v, int) or isinstance(v, float):
-                    vvv = vvv + """{}={} and """.format(k, v)
+                    vvv = vvv + """`{}`={} and """.format(k, v)
                 else:
-                    vvv = vvv + """{}='{}' and """.format(k, v)
+                    vvv = vvv + """`{}`='{}' and """.format(k, v)
 
         else:
             for k, v in col['new_values'].items():
                 if event.get('pkn').count(k) > 0:
                     if v == 'NULL':
-                        vvv = vvv + """{} is {} and """.format(k, v)
+                        vvv = vvv + """`{}` is {} and """.format(k, v)
+                    elif get_column_type(event, k) == 'timestamp':
+                        vvv = vvv + """`{}`='{}' and """.format(k, timestamp_datetime(int(v)))
                     elif isinstance(v, int) or isinstance(v, float):
-                        vvv = vvv + """{}={} and """.format(k, v)
+                        vvv = vvv + """`{}`={} and """.format(k, v)
                     else:
-                        vvv = vvv + """{}='{}' and """.format(k, v)
+                        vvv = vvv + """`{}`='{}' and """.format(k, v)
         vals=''
         for k, v in col['old_values'].items():
             if v == 'NULL':
-                vals = vals + """{}={},""".format(k, v)
+                vals = vals + """`{}`={},""".format(k, v)
+            elif get_column_type(event, k) == 'timestamp':
+                vvv = vvv + """`{}`='{}' and """.format(k, timestamp_datetime(int(v)))
             elif isinstance(v, int) or isinstance(v, float):
-                vals = vals + """{}={},""".format(k, v)
+                vals = vals + """`{}`={},""".format(k, v)
             else:
-                vals = vals + """{}='{}',""".format(k, v)
+                vals = vals + """`{}`='{}',""".format(k, v)
 
 
         event['rollback'] = 'update `{}`.`{}` set {} where {}'.\
@@ -305,6 +371,8 @@ def gen_rollback(event):
             cols = cols + '`{}`,'.format(k)
             if v == 'NULL':
                 vals = vals + "{},".format(v)
+            elif get_column_type(event, k) == 'timestamp':
+                vals = vals + "'{}',".format(timestamp_datetime(int(v)))
             elif isinstance(v, int) or isinstance(v, float):
                 vals = vals + "{},".format(v)
             else:
@@ -381,6 +449,21 @@ def parsing(p_start_time = None,
            if p_max_rows is not None:
                if row>int(p_max_rows):
                   break
+
+       # last sql
+       if temp.get('sql') is not None:
+           temp['sql'] = temp['sql'][0:-2]
+           if p_schema is not None and p_table is not None:
+               if temp['db'] == p_schema and temp['table'] == p_table:
+                   contents.append(replace_column(temp))
+           elif p_schema is not None and p_table is None:
+               if temp['db'] == p_schema:
+                   contents.append(replace_column(temp))
+           elif p_schema is None and p_table is not None:
+               if temp['table'] == p_table:
+                   contents.append(replace_column(temp))
+           else:
+               contents.append(replace_column(temp))
 
     if p_table is not None:
        print('\nTable `{}` total {} rows.'.format(p_table,len(contents)))
