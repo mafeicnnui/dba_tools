@@ -33,7 +33,7 @@
       <paths name="hopson@10.2.39.18:65508_dbops">
         <serverdata>
           <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="." local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
