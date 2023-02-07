@@ -15,3 +15,5 @@ binlog2parser.json
 
 帮助：
 python3 binlog2parser.py  --help
+
+python3 binlog2parser.py  --binlogfile mysql_172.17.219.137_3306_mysql-bin.003752 --schema hopsonone_point --type=insert --rollback=Y --debug DEBUG
