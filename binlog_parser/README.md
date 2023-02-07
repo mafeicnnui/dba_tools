@@ -24,4 +24,4 @@
         --schema hopsonone_point \
         --type=insert \
         --rollback=Y \
-        --debug DEBUG
+        --debug=Y

@@ -358,7 +358,7 @@ def gen_rollback(event):
             if v == 'NULL':
                 vals = vals + """`{}`={},""".format(k, v)
             elif get_column_type(event, k) == 'timestamp':
-                vvv = vvv + """`{}`='{}' and """.format(k, timestamp_datetime(int(v)))
+                vals = vals + """`{}`='{}' and """.format(k, timestamp_datetime(int(v)))
             elif isinstance(v, int) or isinstance(v, float):
                 vals = vals + """`{}`={},""".format(k, v)
             else:
@@ -405,9 +405,10 @@ def parsing(p_start_time = None,
             p_max_rows = None,
             p_debug = 'N'):
     start_time = datetime.datetime.now()
-    if p_type.lower() not in ('insert', 'update', 'delete'):
-        print('Not support type,only support `insert`,`update`,`delete` type!')
-        sys.exit(0)
+    if p_type is not None:
+        if p_type.lower() not in ('insert', 'update', 'delete'):
+            print('Not support type,only support `insert`,`update`,`delete` type!')
+            sys.exit(0)
 
     log = parse_log(p_start_time,p_stop_time,p_start_pos, p_stop_pos, p_schema,p_table,p_type,p_binlogfile,p_debug)
     if log is None:
