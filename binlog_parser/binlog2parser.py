@@ -105,6 +105,8 @@ def parse_log(p_start_time = None,
               p_start_pos = None,
               p_stop_pos = None,
               p_schema = None,
+              p_table = None,
+              p_type = None,
               p_binlogfile= None,
               p_debug = None):
     vv = ''
@@ -121,28 +123,37 @@ def parse_log(p_start_time = None,
     if p_stop_pos is not None:
         vv = vv + ' --stop-position={}'.format(p_stop_pos)
 
+    logfile = p_binlogfile
+    if p_schema is not None:
+        logfile = logfile + '_' + p_schema
+    if p_table is not None:
+        logfile = logfile + '_' + p_table
+    if p_type is not None:
+        logfile = logfile + '_' + p_type
+    logfile = logfile + '.log'
+
     if sys.platform == 'win32':
        if os.system('where mysqlbinlog') == 0:
           if  p_schema is None:
               cmd = "mysqlbinlog --no-defaults --skip-gtids --base64-output=decode-rows -vv {} {} | find '###' | sed  's/###//g' > {} ".\
-                    format(vv,p_binlogfile, p_binlogfile + '.log')
+                    format(vv,p_binlogfile, logfile)
           else:
               cmd = "mysqlbinlog --no-defaults --skip-gtids --base64-output=decode-rows -vv {} --database={} {} | find '###' | sed  's/###//g' > {} ". \
-                  format(vv, p_schema, p_binlogfile, p_binlogfile + '.log')
+                  format(vv, p_schema, p_binlogfile, logfile)
        else:
-          print('mysqlbinlog not found!')
+          print('mysqlbinlog `{}` not found!'.format(p_binlogfile))
           sys.exit(0)
 
     else:
        if os.system('which mysqlbinlog &>/dev/null') == 0:
           if p_schema is None:
               cmd = "mysqlbinlog --no-defaults --skip-gtids --base64-output=decode-rows -vv {} {} | grep '###' | sed  's/###//g' > {}".\
-                    format(vv,p_binlogfile,p_binlogfile+'.log')
+                    format(vv,p_binlogfile,logfile)
           else:
               cmd = "mysqlbinlog --no-defaults --skip-gtids --base64-output=decode-rows -vv {} --database={} {} | grep '###' | sed  's/###//g' > {}".\
-                    format(vv,p_schema,p_binlogfile,p_binlogfile+'.log')
+                    format(vv,p_schema,p_binlogfile,logfile)
        else:
-          print('mysqlbinlog not found!')
+          print('mysqlbinlog `{}` not found!'.format(p_binlogfile))
           sys.exit(0)
 
     print('Parsing binlogfile `{}` ...'.format(p_binlogfile))
@@ -150,9 +161,9 @@ def parse_log(p_start_time = None,
        print(cmd)
     if os.system(cmd) == 0:
        print('Binlogfile `{}` resolve success!'.format(p_binlogfile))
-       return p_binlogfile+'.log'
+       return logfile
     else:
-       print('Resolve binlogfile failure!')
+       print('Resolve binlogfile `{}` failure!'.format(p_binlogfile))
        return None
 
 def format_sql(v_sql):
@@ -208,7 +219,6 @@ def replace_column(p_log):
         p_log['sql'] = p_log['sql'].replace('@'+str(o['ordinal_position'])+'=',o['column_name']+'=')
     p_log['sql'] = p_log['sql'].replace('\n', '')
     p_log['sql'] = re.sub('\s+', ' ', p_log['sql'])
-
     col = parse_col_name_value(p_log)
     if p_log['type'] == 'insert':
         cols = ''
@@ -277,7 +287,7 @@ def replace_column(p_log):
                 if v == 'NULL':
                     val = val + """{}={},""".format(k,v)
                 elif get_column_type(p_log, k) == 'timestamp':
-                    vvv = vvv + """{}='{}',""".format(k, timestamp_datetime(int(v)))
+                    val = val + """{}='{}',""".format(k, timestamp_datetime(int(v)))
                 elif isinstance(v, int) or isinstance(v, float):
                     val = val + """{}={},""".format(k,v)
                 else:
@@ -288,7 +298,6 @@ def replace_column(p_log):
                                     p_log['table'],
                                     val[0:-1],
                                     vvv[0:-5])
-
     p_log = gen_rollback(p_log)
     return p_log
 
@@ -390,12 +399,17 @@ def parsing(p_start_time = None,
             p_stop_pos = None,
             p_schema = None,
             p_table = None,
+            p_type = None,
             p_binlogfile = None,
             p_rollback = 'N',
             p_max_rows = None,
             p_debug = 'N'):
     start_time = datetime.datetime.now()
-    log = parse_log(p_start_time,p_stop_time,p_start_pos, p_stop_pos, p_schema,p_binlogfile,p_debug)
+    if p_type.lower() not in ('insert', 'update', 'delete'):
+        print('Not support type,only support `insert`,`update`,`delete` type!')
+        sys.exit(0)
+
+    log = parse_log(p_start_time,p_stop_time,p_start_pos, p_stop_pos, p_schema,p_table,p_type,p_binlogfile,p_debug)
     if log is None:
        print('Resolve binlog error!')
        sys.exit(0)
@@ -408,7 +422,7 @@ def parsing(p_start_time = None,
     contents=[]
     temp = {}
     row = 0
-    with open(log,encoding='utf-8') as file:
+    with open(log,encoding='utf-8',errors='ignore') as file:
        for line in file:
            row = row + 1
            print('\rProcessing sql : {}/{} , progress : {}%'.format(row,rows,round(round(row/rows,4)*100,4)),end='')
@@ -466,22 +480,42 @@ def parsing(p_start_time = None,
                contents.append(replace_column(temp))
 
     if p_table is not None:
-       print('\nTable `{}` total {} rows.'.format(p_table,len(contents)))
+       print('\nTable `{}` parse total {} rows.'.format(p_table,len(contents)))
     else:
-       print('\nTotal {} rows.'.format(len(contents)))
+       print('\nSchema `{}` parse total {} rows.'.format(p_schema,len(contents)))
 
     print('Wrtie sql file :`{}`'.format(log.replace('.log','.sql')))
+    filter_rows = 0
     with open(log.replace('.log','.sql'), 'w', encoding="utf-8") as f:
        for i in contents:
-            f.write(i['statement'].strip()+';\n')
+           if p_type is None:
+              f.write(i['statement'].strip()+';\n')
+              filter_rows = filter_rows + 1
+           elif p_type.lower() in ('insert','update','delete'):
+              if i['type'] == p_type.lower():
+                 f.write(i['statement'].strip() + ';\n')
+                 filter_rows = filter_rows + 1
+           else:
+              pass
 
+    rollback_rows = 0
     if p_rollback == 'Y':
        print('Write rollback log file : `{}`...'.format(log.replace('.log', '.rollback.sql')))
        with open(log.replace('.log', '.rollback.sql'), 'w', encoding="utf-8") as f:
            for i in contents[::-1]:
-               f.write(i['rollback'].strip() + ';\n')
+               if p_type is None:
+                  f.write(i['rollback'].strip() + ';\n')
+                  rollback_rows = rollback_rows + 1
+               elif p_type.lower() in ('insert', 'update', 'delete'):
+                   if i['type'] == p_type.lower():
+                      f.write(i['rollback'].strip() + ';\n')
+                      rollback_rows = rollback_rows + 1
+               else:
+                   pass
 
     print('Elapse time:{}s'.format(get_seconds(start_time)))
+    print('Write statement {} rows'.format(filter_rows))
+    print('Write rollback {} rows'.format(rollback_rows))
 
 def parse_param():
     parser = argparse.ArgumentParser(description='Resolve mysql binlogfile.')
@@ -491,6 +525,7 @@ def parse_param():
     parser.add_argument('--stop_pos', help='停止位置', default=None)
     parser.add_argument('--schema', help='解析库名', default=None)
     parser.add_argument('--table', help='解析表名', default=None)
+    parser.add_argument('--type', help='语句类型(支持：insert,update,delete)', default=None)
     parser.add_argument('--binlogfile', help='binlog文件名', required=True)
     parser.add_argument('--rollback', help='生成回滚语句', default='N')
     parser.add_argument('--max_rows', help='最大解析日志行数', default=None)
@@ -545,6 +580,7 @@ if __name__ == '__main__':
            args.stop_pos,
            args.schema,
            args.table,
+           args.type,
            args.binlogfile,
            args.rollback,
            args.max_rows,

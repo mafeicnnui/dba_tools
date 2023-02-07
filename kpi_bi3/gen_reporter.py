@@ -214,7 +214,7 @@ def write_item_log(dbd,i,s,q,v):
                      and  stat_sql_id={}  and  xh ={}
              """.format(i['item_type'],i['item_name'],i['market_id'],i['market_name'],s['stat_sql_id'],s['xh'])
         cr.execute(st)
-        print('deltete t_kpi_item_log {}=>{}(sql_stat_id:{}/xh={})'.format(i['market_name'],i['item_name'],s['stat_sql_id'],s['xh']))
+        print('delete t_kpi_item_log {}=>{}(sql_stat_id:{}/xh={})'.format(i['market_name'],i['item_name'],s['stat_sql_id'],s['xh']))
 
     st = """INSERT INTO t_kpi_item_log(item_type,item_name,market_id,market_name,stat_sql_id,xh,statement,item_value,create_time)
                 VALUES('{}','{}','{}','{}','{}','{}','{}','{}',now())
@@ -232,14 +232,17 @@ def get_markets(dblog,flag):
 
 def get_label_id(dbd,market_id):
     cr = dbd.cursor()
-    st = """SELECT label_id FROM t_kpi_label WHERE market_id='{}'""".format(market_id)
-    cr.execute(st)
-    rs = cr.fetchone()
-    if rs is not None:
-       cr.close()
-       return rs['label_id']
-    else:
-      return ''
+    st = """SELECT GROUP_CONCAT(label_id) as label_id FROM t_kpi_label WHERE   instr('{}',market_id)>0""".format(market_id)
+    try:
+        cr.execute(st)
+        rs = cr.fetchone()
+        if rs is not None:
+           cr.close()
+           return rs['label_id']
+        else:
+          return ''
+    except:
+       return ''
 
 def write_bbtj(dbd):
     cr = dbd.cursor()
@@ -306,7 +309,10 @@ ELSE
     CONCAT(ROUND(REPLACE(item_finish_value,'%','')/REPLACE(item_month_value,'%','')*100,2),'%')
 END  percent,
 create_time
-FROM `v_kpi_bbtj` WHERE bbrq = '{}' ORDER BY id""".format(get_time()[0:11])
+FROM `v_kpi_bbtj` 
+WHERE bbrq = '{}'  
+  AND (item_name,market_name) IN (SELECT item_name,market_name FROM t_kpi_item WHERE is_mail='Y') 
+ORDER BY id""".format(get_time()[0:11])
    cr.execute(st)
    rs=cr.fetchall()
    return rs
@@ -368,15 +374,16 @@ if __name__ == '__main__':
         for i in get_markets(dbd,'N'):
             for s in  get_bbtj_sql(dbd,i['stat_sql_id']):
                 if __name__ == '__main__':
+                    #print('market_id=',i['market_id'])
+                    #print('lable_id=', get_label_id(dbd, i['market_id']))
                     q = s['statement'].\
                         replace('$$BBRQQ$$',bbrqq).\
                         replace('$$BBRQZ$$',bbrqz).\
                         replace('$$MARKET_ID$$',i['market_id']).\
-                        replace('$$LABEL_ID$$',get_label_id(dbd,i['market_id']))
+                        replace('$$LABEL_ID$$',str(get_label_id(dbd,i['market_id'])))
                 v = get_value(dbd,s['dsid'],q)
                 set_item_value(dbd,s['stat_sql_id'],s['xh'],v)
                 write_item_log(dbd,i,s,q,v)
-
 
         print('write t_kpi_bbtj...')
         write_bbtj(dbd)
@@ -390,6 +397,7 @@ if __name__ == '__main__':
     if cfg['is_send_mail'] == 'Y':
         v_title = '商管BI-KPI统计情况表-{}'.format(get_bbrq())
         v_content = get_html_contents(dbd)
+
         if sys.platform == 'win32':
            print('>>>>>>>>>>>>')
            send_mail25_win(cfg['sender'], cfg['sender_pass'], cfg['receiver'], v_title, v_content)
