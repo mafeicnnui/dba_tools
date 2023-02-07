@@ -19,4 +19,9 @@
     yum intall python3
     pip3 install -r requirement.txt
     python3 binlog2parser.py  --help    
-    python3 binlog2parser.py  --binlogfile mysql_192.168.1.1_3306_mysql-bin.003752 --schema hopsonone_point --type=insert --rollback=Y --debug DEBUG
+    python3 binlog2parser.py  \
+        --binlogfile mysql_192.168.1.1_3306_mysql-bin.003752 \
+        --schema hopsonone_point \
+        --type=insert \
+        --rollback=Y \
+        --debug DEBUG
