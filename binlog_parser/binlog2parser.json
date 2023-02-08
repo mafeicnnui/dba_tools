@@ -1,8 +1,8 @@
 {
-    "db_ip":"10.2.39.80",
+    "db_ip":"rm-2ze9y75wip0929gy8.mysql.rds.aliyuncs.com",
     "db_port":"3306",
-    "db_user":"root",
-    "db_pass":"root123456HOPSON",
+    "db_user":"hopsonone_ro",
+    "db_pass":"qnfPZ5aQdbPpYgcCMYy6",
     "db_service":"information_schema",
     "db_charset":"utf8mb4"
 }

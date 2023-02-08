@@ -98,7 +98,6 @@ def get_tab_pk_name(db,schema,table):
     db.commit()
     cr.close()
     return v[0:-1]
-    pass
 
 def parse_log(p_start_time = None,
               p_stop_time =None,
