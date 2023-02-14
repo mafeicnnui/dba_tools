@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+    <p></p>
+    <div class="row">
+         <div class="col-md-12">
+           <div class="col-md-3 input-group">
+                <input type="text" id="url" name="username" class="form-control" placeholder="请输入URL">
+                <span class="input-group-btn">
+                   <button type="button"  id='test' class="btn waves-effect waves-light btn-primary">&nbsp;查询</button>
+                </span>
+           </div>
+         </div>
+    </div>
+    <br>
+    <div class="row">
+         <div class="col-md-12">
+           <div class="col-md-3 input-group">
+               <textarea id="query_result" rows="10" cols="200"></textarea>
+           </div>
+         </div>
+    </div>
+
+    <img src="{{ url_for('static',path='images/1.png') }}" style="width: 100px;height: 100px">
+    <img src="{{ url_for('static',path='images/2.png') }}" style="width: 100px;height: 100px">
+
+
+   <script src="/static/js/jquery.min.js"></script>
+   <script>
+        $(document).ready(function() {
+            $(document).ajaxStart(function() {
+                console.log('ajaxStart...')
+            }).ajaxComplete(function() {
+                console.log('ajaxComplete...')
+            }).ajaxStop(function() {
+                console.log('ajaxStop...')
+            }).ajaxError(function( event, request ) {
+                console.log('ajaxError...')
+                console.log('request=',request.status,request.responseJSON)
+                res = {
+                    'status':request.status,
+                    'message':request.responseJSON
+                }
+                $('#query_result').val(JSON.stringify(res))
+            });
+
+            $("#test").click(function() {
+              $.ajax({
+                  url: $('#url').val(),
+                  type: "get",
+                  datatype: "json",
+                  success: function (dataSet) {
+                     $('#query_result').val(JSON.stringify(dataSet))
+                  }
+              })
+            });
+
+            $("#query_btn").click();
+
+        });
+
+   </script>
+</body>
+
+</html>
