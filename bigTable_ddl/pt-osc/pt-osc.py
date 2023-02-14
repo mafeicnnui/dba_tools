@@ -39,6 +39,13 @@ def get_db(args):
                            write_timeout = 60)
     return conn
 
+
+def check_table(cfg,args):
+    if get_tab_pk_name(cfg,args) =='':
+       print('Table `{}`.`{}` have not primary key,exit!'.format(args.database, args.table))
+       return False
+    return True
+
 def create_temp_table(cfg,args):
     cr = cfg['cr']
     st = 'show create table `{}`.`{}`'.format(args.database, args.table)
@@ -282,18 +289,19 @@ def main():
     cfg['db'] = get_db(args)
     cfg['cr'] = cfg['db'].cursor()
     cfg['cr'].execute('SET GLOBAL group_concat_max_len = 102400')
-    create_temp_table(cfg, args)
-    create_log_table(cfg, args)
-    create_trigger(cfg,args)
-    copy_table(cfg, args)
-    apply_log(cfg, args)
-    if check_data(cfg, args):
-       rename_table(cfg, args)
-       print('sleep 30s...')
-       time.sleep(20)
-       drop_log_table(cfg,args)
-       drop_temp_table(cfg,args)
-       drop_old_table(cfg,args)
+    if check_table(cfg,args):
+        create_temp_table(cfg, args)
+        create_log_table(cfg, args)
+        create_trigger(cfg,args)
+        copy_table(cfg, args)
+        apply_log(cfg, args)
+        if check_data(cfg, args):
+           rename_table(cfg, args)
+           print('sleep 30s...')
+           time.sleep(20)
+           drop_log_table(cfg,args)
+           drop_temp_table(cfg,args)
+           drop_old_table(cfg,args)
     cfg['cr'].close()
     cfg['db'].close()
 
@@ -310,14 +318,15 @@ def main():
        9.切换表，将临时表名改为原表，原表删除,释放锁
        10.切换完成
   准备:
-    SET GLOBAL group_concat_max_len = 102400;
-    SET SESSION group_concat_max_len = 102400;
+    set global group_concat_max_len = 102400;
+    SET session group_concat_max_len = 102400;
 
     create table xs(xh int primary key,xm varchar(20),nl int);
     insert into xs(xh,xm,nl) values(1,'zhang.san',23),(2,'li.shi',43),(3,'wang.wu',37);
     alter table `test`.`xs` add column `csrq` date NULL after `nl`;     
-    pt-osc.py --host=10.2.39.40 --port=3306 --user=puppet --password=Puppet@123 --database=test --table=xs --batch=2 --debug=y --alter="add column `csrq` date null after `nl`"
-    pt-osc.py --host=10.2.39.40 --port=3306 --user=puppet --password=Puppet@123 --database=test --table=sales_report_day --batch=1000 --debug=y --alter="add column `csrq` date null"
+    
+    pt-osc.py --host=192.168.1.1 --port=3306 --user=puppet --password=Puppet@123 --database=test --table=xs --batch=2 --debug=y --alter="add column `csrq` date null after `nl`"
+    pt-osc.py --host192.168.1.1 --port=3306 --user=puppet --password=Puppet@123 --database=test --table=sales_report_day --batch=1000 --debug=y --alter="add column `csrq` date null"
 
 '''
 
