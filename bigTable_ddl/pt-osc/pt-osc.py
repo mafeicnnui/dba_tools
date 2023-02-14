@@ -121,26 +121,6 @@ def get_tab_pk_name(cfg,args):
         v_col = v_col + '`{}`,'.format(i['column_name'])
     return v_col[0:-1]
 
-# def get_tab_columns(cfg,args):
-#     cr = cfg['cr']
-#     st = """SELECT group_concat('`',column_name,'`') as column_name,
-#                    group_concat(concat('new.',column_name)) as ins_col_name
-#             FROM information_schema.columns
-#              WHERE table_schema='{}'
-#               AND table_name='{}'
-#               order by ordinal_position""".format(args.database, args.table)
-#     cr.execute(st)
-#     rs=cr.fetchone()
-#     t=''
-#     u=''
-#     for i in rs['ins_col_name'].split(','):
-#         t=t+'''"'",{},"',",'''.format(i)
-#         u=u+'''{}='",{},"','''.format(i.split('.')[1],i)
-#     rs['ins_col_name'] =t[0:-3]+')"'
-#     rs['upd_col_name'] = u[0:-1]
-#     rs['pk_name'] = get_tab_pk_name(cfg,args)
-#     return rs
-
 def get_tab_columns(cfg,args):
     cr = cfg['cr']
     st = """SELECT group_concat('`',column_name,'`') as column_name,
