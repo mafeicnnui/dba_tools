@@ -1,0 +1,8 @@
+{
+    "db_ip"        : "rr-2zekl959654j1k49r6o.mysql.rds.aliyuncs.com",
+    "db_port"      : "3306",
+    "db_user"      : "puppet",
+    "db_pass"      : "Puppet@123",
+    "db_service"   : "hopsonone_business",
+    "db_charset"   : "utf8"
+}

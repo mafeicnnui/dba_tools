@@ -6,7 +6,7 @@ from fastapi import FastAPI
 import uvicorn
 app = FastAPI()
 
-
+a: str="abcdefg"
 
 @app.get("/")
 async def root():

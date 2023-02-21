@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RemoteMappingsManager">
+    <list>
+      <list>
+        <remote-mappings server-id="python@sftp://hopson@10.2.39.17:65508/home/hopson/apps/usr/webserver/dba/python3.6.0/bin/python3">
+          <settings>
+            <list>
+              <mapping local-root="$PROJECT_DIR$/fastapi" remote-root="/home/hopson/apps/usr/webserver/dba_tools/fastapi" />
+            </list>
+          </settings>
+        </remote-mappings>
+        <remote-mappings server-id="python@sftp://hopson@10.2.39.21:65508/usr/bin/python3" />
+      </list>
+    </list>
+  </component>
+</project>

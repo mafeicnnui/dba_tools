@@ -49,14 +49,14 @@
             });
 
             $("#test").click(function() {
-              $.ajax({
-                  url: $('#url').val(),
-                  type: "get",
-                  datatype: "json",
-                  success: function (dataSet) {
-                     $('#query_result').val(JSON.stringify(dataSet))
-                  }
-              })
+                  $.ajax({
+                      url: $('#url').val(),
+                      type: "get",
+                      datatype: "json",
+                      success: function (dataSet) {
+                         $('#query_result').val(JSON.stringify(dataSet))
+                      }
+                  })
             });
 
             $("#query_btn").click();

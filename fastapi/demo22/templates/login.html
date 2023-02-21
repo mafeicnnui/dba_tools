@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <style>
+        textarea {
+            border:1px;
+            outline:1px;
+            resize:none;
+            background: ghostwhite;
+        }
+    </style>
+</head>
+<body>
+    <p></p>
+     <div class="col-md-12">
+        <div class="row">
+           <div class="col-md-3">
+               <div class="input-group">
+                   <span class="input-group-addon">用户</span>
+                   <input type="text" id="user_name" name="user_name" class="form-control" placeholder="用户">
+                </div>
+           </div>
+           <div class="col-md-3">
+               <div class="input-group">
+                   <span class="input-group-addon">密码</span>
+                   <input type="password" id="password" name="password" class="form-control" placeholder="密码">
+               </div>
+           </div>
+           <div class="col-md-1">
+                 <div class="input-group">
+                  <span class="input-group-btn">
+                       <button type="button"  id="login" class="btn waves-effect waves-light btn-primary">&nbsp登 陆</button>
+                  </span>
+                  <span class="input-group-btn">
+                       <button type="button"  id="user" class="btn waves-effect waves-light btn-primary">&nbsp用 户</button>
+                  </span>
+                </div>
+           </div>
+        </div>
+        <p>
+        <div class="row">
+             <div class="col-md-12">
+               <div class="col-md-3 input-group">
+                   <textarea id="query_result" rows="10" cols="200"></textarea>
+                   <input type="hidden" id='token'>
+               </div>
+             </div>
+        </div>
+   </div>
+   <script src="/static/js/jquery.min.js"></script>
+   <script>
+        $(document).ready(function() {
+
+            $("#login").click(function() {
+                 console.log('request:',JSON.stringify({
+                            'item':{
+                              user_name: $('#user_name').val(),
+                              password: $('#password').val()
+                            }
+                          }
+                      ))
+                  $.ajax({
+                      headers:{'Content-Type':'application/json;charset=utf8'},
+                      url:'http://10.2.39.21:8000/login',
+                      type: "post",
+                      datatype: "JSON",
+                      data: JSON.stringify({
+                            'item':{
+                              user_name: $('#user_name').val(),
+                              password: $('#password').val()
+                            }
+                          }
+                      ),
+                      success: function (dataSet) {
+                         $('#query_result').val(JSON.stringify(dataSet))
+                         $('#token').val(dataSet['token'])
+                      }
+                  })
+            });
+
+            $("#user").click(function() {
+                  console.log('token:', $('#token').val())
+
+                  $.ajax({
+                      headers:{
+                           'Content-Type':'application/json;charset=utf8',
+                           'Authorization':'bearer '+$('#token').val()
+                      },
+                      url:'http://10.2.39.21:8000/',
+                      type: "get",
+                      datatype: "JSON",
+                      success: function (dataSet) {
+                         $('#query_result').val($('#query_result').val()+'\n'+JSON.stringify(dataSet))
+                      }
+                  })
+            });
+        });
+
+   </script>
+</body>
+
+</html>
