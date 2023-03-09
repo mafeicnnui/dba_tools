@@ -26,10 +26,10 @@ import time
 import pymysql
 
 def get_db():
-    conn = pymysql.connect(host= 'rm-2ze9y75wip0929gy86o.mysql.rds.aliyuncs.com',
+    conn = pymysql.connect(host= 'xxxxxx',
                            port= 3306,
                            user = 'puppet',
-                           passwd = 'Puppet@123',
+                           passwd = 'xxxxxxxxx',
                            db  = 'information_schema',
                            charset = 'utf8mb4',
                            autocommit = True,
