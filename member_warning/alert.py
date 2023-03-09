@@ -9,10 +9,10 @@ import datetime
 import pymysql
 
 settings = {
-    "host"         : "rm-2zer0v9g25bgu4rx43o.mysql.rds.aliyuncs.com",
+    "host"         : "xxxxxxxxxxxx",
     "port"         : "3306",
     "user"         : "puppet",
-    "passwd"       : "Puppet@123",
+    "passwd"       : "xxxxxxxxxxxxxxxx",
     "db"           : "test",
     "db_charset"   : "utf8"
 }
