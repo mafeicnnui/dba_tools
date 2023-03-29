@@ -1,0 +1,352 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# @Time : 2023/3/28 10:01
+# @Author : ma.fei
+# @File : write_data.py
+# @Software: PyCharm
+
+import warnings
+import pymysql
+
+settings = {
+    "host"         : "xxx",
+    "port"         : "3306",
+    "user"         : "puppet",
+    "passwd"       : "xxx",
+    "db"           : "test",
+    "db_charset"   : "utf8"
+}
+
+def get_db():
+    conn = pymysql.connect(
+       host = settings['host'],
+       port=int(settings['port']),
+       user=settings['user'],
+       passwd=settings['passwd'],
+       db=settings['db'],
+       charset='utf8',
+       cursorclass=pymysql.cursors.DictCursor,
+       autocommit=True)
+    return conn
+
+def ipva_error(p_db):
+    st1="truncate table test.dbo_traffic_sites"
+    st2 = """INSERT INTO test.dbo_traffic_sites (siteid, sitekey, parentid, sitealias, sitename, sitetype, adress, AREA,         netarea, staffno, sitestatus, opendate, opendatestatus, auditenable, smsenable, mailenable, siteattrcode,         cityid, siteimage, vendorcode, indexno, domainname, createtime, modifytime, deletetime, market_id) 
+SELECT 
+  siteid,
+  sitekey,
+  parentid,
+  sitealias,
+  sitename,
+  sitetype,
+  adress,
+  AREA,
+  netarea,
+  staffno,
+  sitestatus,
+  opendate,
+  opendatestatus,
+  auditenable,
+  smsenable,
+  mailenable,
+  siteattrcode,
+  cityid,
+  siteimage,
+  vendorcode,
+  indexno,
+  domainname,
+  createtime,
+  modifytime,
+  deletetime,
+  market_id 
+FROM
+  hopsonone_ipva_flow_bj.`dbo_traffic_sites` 
+UNION
+ALL 
+SELECT 
+  siteid,
+  sitekey,
+  parentid,
+  sitealias,
+  sitename,
+  sitetype,
+  adress,
+  AREA,
+  netarea,
+  staffno,
+  sitestatus,
+  opendate,
+  opendatestatus,
+  auditenable,
+  smsenable,
+  mailenable,
+  siteattrcode,
+  cityid,
+  siteimage,
+  vendorcode,
+  indexno,
+  domainname,
+  createtime,
+  modifytime,
+  deletetime,
+  market_id 
+FROM
+  hopsonone_ipva_flow_cd.`dbo_traffic_sites` 
+UNION
+ALL 
+SELECT 
+  siteid,
+  sitekey,
+  parentid,
+  sitealias,
+  sitename,
+  sitetype,
+  adress,
+  AREA,
+  netarea,
+  staffno,
+  sitestatus,
+  opendate,
+  opendatestatus,
+  auditenable,
+  smsenable,
+  mailenable,
+  siteattrcode,
+  cityid,
+  siteimage,
+  vendorcode,
+  indexno,
+  domainname,
+  createtime,
+  modifytime,
+  deletetime,
+  market_id 
+FROM
+  hopsonone_ipva_flow_gz.`dbo_traffic_sites` 
+UNION
+ALL 
+SELECT 
+  siteid,
+  sitekey,
+  parentid,
+  sitealias,
+  sitename,
+  sitetype,
+  adress,
+  AREA,
+  netarea,
+  staffno,
+  sitestatus,
+  opendate,
+  opendatestatus,
+  auditenable,
+  smsenable,
+  mailenable,
+  siteattrcode,
+  cityid,
+  siteimage,
+  vendorcode,
+  indexno,
+  domainname,
+  createtime,
+  modifytime,
+  deletetime,
+  market_id 
+FROM
+  hopsonone_ipva_flow_sh.`dbo_traffic_sites` 
+UNION
+ALL 
+SELECT 
+  siteid,
+  sitekey,
+  parentid,
+  sitealias,
+  sitename,
+  sitetype,
+  adress,
+  AREA,
+  netarea,
+  staffno,
+  sitestatus,
+  opendate,
+  opendatestatus,
+  auditenable,
+  smsenable,
+  mailenable,
+  siteattrcode,
+  cityid,
+  siteimage,
+  vendorcode,
+  indexno,
+  domainname,
+  createtime,
+  modifytime,
+  deletetime,
+  market_id 
+FROM
+  hopsonone_ipva_flow_sh_tjd.`dbo_traffic_sites` 
+UNION
+ALL 
+SELECT 
+  siteid,
+  sitekey,
+  parentid,
+  sitealias,
+  sitename,
+  sitetype,
+  adress,
+  AREA,
+  netarea,
+  staffno,
+  sitestatus,
+  opendate,
+  opendatestatus,
+  auditenable,
+  smsenable,
+  mailenable,
+  siteattrcode,
+  cityid,
+  siteimage,
+  vendorcode,
+  indexno,
+  domainname,
+  createtime,
+  modifytime,
+  deletetime,
+  market_id 
+FROM
+  hopsonone_ipva_flow_wangjing.`dbo_traffic_sites` 
+UNION
+ALL 
+SELECT 
+  siteid,
+  sitekey,
+  parentid,
+  sitealias,
+  sitename,
+  sitetype,
+  adress,
+  AREA,
+  netarea,
+  staffno,
+  sitestatus,
+  opendate,
+  opendatestatus,
+  auditenable,
+  smsenable,
+  mailenable,
+  siteattrcode,
+  cityid,
+  siteimage,
+  vendorcode,
+  indexno,
+  domainname,
+  createtime,
+  modifytime,
+  deletetime,
+  market_id 
+FROM
+  hopsonone_ipva_flow_hs_square.`dbo_traffic_sites` 
+UNION
+ALL 
+SELECT 
+  siteid,
+  sitekey,
+  parentid,
+  sitealias,
+  sitename,
+  sitetype,
+  adress,
+  AREA,
+  netarea,
+  staffno,
+  sitestatus,
+  opendate,
+  opendatestatus,
+  auditenable,
+  smsenable,
+  mailenable,
+  siteattrcode,
+  cityid,
+  siteimage,
+  vendorcode,
+  indexno,
+  domainname,
+  createtime,
+  modifytime,
+  deletetime,
+  market_id 
+FROM
+  hopsonone_ipva_flow_zc.`dbo_traffic_sites` 
+UNION
+ALL 
+SELECT 
+  siteid,
+  sitekey,
+  parentid,
+  sitealias,
+  sitename,
+  sitetype,
+  adress,
+  AREA,
+  netarea,
+  staffno,
+  sitestatus,
+  opendate,
+  opendatestatus,
+  auditenable,
+  smsenable,
+  mailenable,
+  siteattrcode,
+  cityid,
+  siteimage,
+  vendorcode,
+  indexno,
+  domainname,
+  createtime,
+  modifytime,
+  deletetime,
+  market_id 
+FROM
+  hopsonone_ipva_flow_ab.`dbo_traffic_sites` 
+UNION
+ALL 
+SELECT 
+  siteid,
+  sitekey,
+  parentid,
+  sitealias,
+  sitename,
+  sitetype,
+  adress,
+  AREA,
+  netarea,
+  staffno,
+  sitestatus,
+  opendate,
+  opendatestatus,
+  auditenable,
+  smsenable,
+  mailenable,
+  siteattrcode,
+  cityid,
+  siteimage,
+  vendorcode,
+  indexno,
+  domainname,
+  createtime,
+  modifytime,
+  deletetime,
+  market_id 
+FROM
+  hopsonone_ipva_flow_xa.`dbo_traffic_sites`"""
+    cr = p_db.cursor()
+    print('truncate table test.dbo_traffic_sites')
+    cr.execute(st1)
+    print('insert into test.dbo_traffic_sites')
+    cr.execute(st2)
+
+if __name__ == '__main__':
+    # warnings.filterwarnings("ignore")
+    db = get_db()
+    ipva_error(db)
