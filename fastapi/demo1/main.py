@@ -4,6 +4,7 @@ FastApi:https://fastapi.tiangolo.com/zh/tutorial/path-params/
 
 from fastapi import FastAPI
 import uvicorn
+
 app = FastAPI()
 
 a: str="abcdefg"
@@ -36,4 +37,4 @@ async def read_file(file_path: str):
 
 
 if __name__ == '__main__':
-   uvicorn.run('main:app',reload=True,port=8000,debug=True)
+   uvicorn.run('main:app',reload=True,host="10.2.39.21",port=8000,debug=True)
