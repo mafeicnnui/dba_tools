@@ -1,0 +1,32 @@
+{
+   "meta_db" : {
+      "db_ip"        : "10.2.39.18",
+      "db_port"      : "3306",
+      "db_user"      : "puppet",
+      "db_pass"      : "Puppet@123",
+      "db_service"   : "puppet",
+      "db_charset"   : "utf8"
+   },
+   "proxy_db" : {
+      "db_ip"        : "10.2.39.18",
+      "db_port"      : "3307",
+      "db_user"      : "root",
+      "db_pass"      : "root",
+      "db_service"   : "encrypt_db",
+      "db_charset"   : "utf8"
+   },
+   "encrypt_db" : {
+      "db_ip"        : "10.2.39.40",
+      "db_port"      : "3306",
+      "db_user"      : "root",
+      "db_pass"      : "root123HOPSON",
+      "db_service"   : "encrypt",
+      "db_charset"   : "utf8"
+   },
+   "statement": "SELECT table_schema,table_name,column_name FROM `t_enc_columns` where status='1' ORDER BY 1,2,3",
+   "encrypt_statement": "UPDATE t_cipher SET dev_plain='{}' WHERE id=23",
+   "decrypt_statement": "select dev_cipher from t_cipher where id=23",
+   "update_encrypt_column": "UPDATE `{table_schema}`.`{table_name}` SET`{column_name}_cipher` ='{{}}' WHERE `{pk_name}` ='{{}}';",
+   "debug"  : false
+
+}
