@@ -1,0 +1,30 @@
+{
+    "meta_db" : {
+      "db_ip"        : "10.2.39.18",
+      "db_port"      : "3306",
+      "db_user"      : "puppet",
+      "db_pass"      : "Puppet@123",
+      "db_service"   : "puppet",
+      "db_charset"   : "utf8"
+   },
+   "prod_db" : {
+      "db_ip"        : "rr-2zekl959654j1k49r6o.mysql.rds.aliyuncs.com",
+      "db_port"      : "3306",
+      "db_user"      : "puppet",
+      "db_pass"      : "Puppet@123",
+      "db_service"   : "information_schema",
+      "db_charset"   : "utf8"
+   },
+   "prod_db_hft" : {
+      "db_ip"        : "rr-2ze8nqixl9wq6ei041o.mysql.rds.aliyuncs.com",
+      "db_port"      : "3306",
+      "db_user"      : "puppet",
+      "db_pass"      : "Puppet@123",
+      "db_service"   : "information_schema",
+      "db_charset"   : "utf8"
+   },
+   "statement": "SELECT \n  table_schema,table_name,column_name,\n  CONCAT('select count(0) as rec from `',table_schema,'`.`',table_name,'` where `',column_name,'` is not null and `',column_name,'` != \\'\\'') AS statement,\n  CONCAT('select count(0) as rec from `',table_schema,'`.`',table_name,'`') AS statement_total\n FROM encrypt.t_enc_columns\nORDER BY table_schema,table_name",
+   "update_rows": "update encrypt.t_enc_columns set notnull_rows={} where table_schema='{}' and table_name='{}' and column_name='{}'",
+   "update_rows_total": "update encrypt.t_enc_columns set total_rows={} where table_schema='{}' and table_name='{}' and column_name='{}'",
+   "debug": false
+}

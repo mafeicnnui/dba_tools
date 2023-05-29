@@ -204,7 +204,7 @@ def read_json(file):
     return cfg
 
 def get_db():
-    cfg  = read_json('./config.json')
+    cfg  = read_json('config.json')
     conn = pymysql.connect(host    = cfg['db_ip'],
                            port    = int(cfg['db_port']),
                            user    = cfg['db_user'],
@@ -214,7 +214,7 @@ def get_db():
     return conn
 
 def get_db_dict():
-    cfg  = read_json('./config.json')
+    cfg  = read_json('config.json')
     conn = pymysql.connect(host    = cfg['db_ip'],
                            port    = int(cfg['db_port']),
                            user    = cfg['db_user'],
@@ -225,7 +225,7 @@ def get_db_dict():
     return conn
 
 def get_ds_db():
-    cfg  = read_json('./config.json')
+    cfg  = read_json('config.json')
     conn = pymysql.connect(host    = cfg['db_ip'],
                            port    = int(cfg['db_port']),
                            user    = cfg['db_user'],

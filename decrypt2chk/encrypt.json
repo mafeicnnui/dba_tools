@@ -1,0 +1,21 @@
+{
+   "meta_db" : {
+      "db_ip"        : "10.2.39.18",
+      "db_port"      : "3306",
+      "db_user"      : "puppet",
+      "db_pass"      : "Puppet@123",
+      "db_service"   : "puppet",
+      "db_charset"   : "utf8"
+   },
+   "encrypt_db" : {
+      "db_ip"        : "10.2.39.80",
+      "db_port"      : "3306",
+      "db_user"      : "root",
+      "db_pass"      : "root123456HOPSON",
+      "db_service"   : "encrypt",
+      "db_charset"   : "utf8"
+   },
+   "statement": "SELECT \n table_schema,table_name,column_name,\nREPLACE(\n REPLACE(\n   REPLACE(\n'INSERT INTO t_enc_check(env,table_schema,table_name,column_name,cipher_column_name,description)\nSELECT \\'$env\\',\\'$table_schema\\',\\'$table_name\\',\\'$column_name\\',CONCAT(\\'$column_name\\',\\'_cipher\\') AS cipher_column_name,\\'加密列值为空!\\'\nFROM $table_schema.`$table_name`\nWHERE `$column_name` IS NOT NULL AND `$column_name`!=\\'\\' \n  AND (`$column_name_cipher` IS NULL OR `$column_name_cipher`=\\'\\')',\n   '$table_schema',table_schema),\n     '$table_name',table_name),\n\t'$column_name',column_name) AS statement\nFROM `t_enc_columns`\nORDER BY id",
+   "env" :"test",
+   "debug": true
+}

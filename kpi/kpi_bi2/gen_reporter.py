@@ -30,7 +30,7 @@ def read_json(file):
     return cfg
 
 # 读取配置文件
-cfg  = read_json('./config.json')
+cfg  = read_json('config.json')
 
 # 获取第一天和最后一天
 def getFirstAndLastDay(p_month):
@@ -193,7 +193,7 @@ def get_bbrq():
     return datetime.datetime.now().strftime("%Y-%m-%d")
 
 def get_db_dict():
-    cfg  = read_json('./config.json')
+    cfg  = read_json('config.json')
     conn = pymysql.connect(host    = cfg['db_ip'],
                            port    = int(cfg['db_port']),
                            user    = cfg['db_user'],

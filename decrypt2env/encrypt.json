@@ -16,14 +16,17 @@
       "db_charset"   : "utf8"
    },
    "encrypt_db" : {
-      "db_ip"        : "10.2.39.80",
+      "db_ip"        : "10.2.39.40",
       "db_port"      : "3306",
       "db_user"      : "root",
-      "db_pass"      : "root123456HOPSON",
+      "db_pass"      : "root123HOPSON",
       "db_service"   : "encrypt",
       "db_charset"   : "utf8"
    },
-   "statement": "SELECT table_schema,table_name,column_name FROM `t_enc_columns` where  status='1' ORDER BY 1,2,3",
+   "statement": "SELECT table_schema,table_name,column_name FROM `t_enc_columns` where table_schema='{table_schema}' and table_name='{table_name}' and status='1' ORDER BY 1,2,3",
+   "table_schema" : "test",
+   "table_name": "t_user",
+   "convert": "pro2dev",
    "encrypt_statement": {
       "dev": [
          "UPDATE t_cipher SET dev_plain='{}' WHERE id=23",
@@ -60,6 +63,6 @@
          "select pro_plain from t_cipher where id=23"
       ]
    },
-   "update_encrypt_column": "UPDATE `{table_schema}`.`{table_name}` SET`{column_name}_cipher` ='{{}}' WHERE `{pk_name}` ='{{}}';",
+   "update_encrypt_column": "UPDATE `{table_schema}`.`{table_name}` SET `{column_name}_cipher` ='{{}}' WHERE `{pk_name}` ='{{}}';",
    "debug"  : false
 }

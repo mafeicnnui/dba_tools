@@ -1,16 +1,17 @@
 {
-    "db_ip"        : "10.2.39.18",
+  "db_ip"        : "10.2.39.18",
     "db_port"      : "3306",
     "db_user"      : "puppet",
     "db_pass"      : "Puppet@123",
     "db_service"   : "puppet",
     "db_charset"   : "utf8",
-    "month"        : "2023-01",
-    "begin_date"   : "2023-01-01",
-    "end_date"     : "2023-01-31 23:59:59",
+    "month"        : "2023-05",
+    "begin_date"   : "2023-05-01",
+    "end_date"     : "2023-05-31 23:59:59",
     "only_bbtj"    : "N",
     "is_send_mail" : "Y",
     "sender"       : "190343@lifeat.cn",
     "sender_pass"  : "R86hyfjobMBYR76h",
     "receiver"     : "190343@lifeat.cn"
+
 }

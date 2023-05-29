@@ -1,0 +1,12 @@
+{
+   "db" : {
+      "db_ip"        : "rr-2zekl959654j1k49r6o.mysql.rds.aliyuncs.com",
+      "db_port"      : "3306",
+      "db_user"      : "puppet",
+      "db_pass"      : "Puppet@123",
+      "db_service"   : "information_schema",
+      "db_charset"   : "utf8"
+   },
+   "statement": "SELECT \n  CONCAT('select count(0) as rec from `',\n  table_schema,'`.`',table_name,'` where `',column_name,'` like \\'%hopsontong%\\'') AS statement,\n  CONCAT('update `',\n  table_schema,'`.`',table_name,'` set `',column_name,'`= replace(`',column_name,'`,\\'%hopsontong%\\',\\'%hopsontone%\\') where `',column_name,'` like \\'%hopsontong%\\'') AS update_statement  \n FROM information_schema.columns \n  WHERE column_name LIKE '%img%' OR column_name LIKE '%logo%'\n   AND table_schema NOT IN ('test')",
+   "debug": false
+}
