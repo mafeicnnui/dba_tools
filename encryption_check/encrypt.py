@@ -9,7 +9,7 @@ import json
 import pymysql
 import warnings
 import logging
-from decrypt2chk.HandleLog import HandleLog
+from encryption_check.HandleLog import HandleLog
 
 def initlogger():
     logger = logging.getLogger()

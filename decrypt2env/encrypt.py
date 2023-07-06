@@ -137,6 +137,31 @@ def db_decrypt(cfg, env, cipher):
         rs = cfg['proxy_cur'].fetchone()
         return rs['pro_plain']
 
+def db_encrypt_like(cfg,env,plain):
+    if env  == DB_ENV['dev']:
+        cfg['proxy_cur'].execute(cfg['encrypt_statement_like']['dev'][0].format(plain))
+        cfg['proxy_cur'].execute(cfg['encrypt_statement_like']['dev'][1])
+        rs = cfg['proxy_cur'].fetchone()
+        return rs['dev_cipher'],rs['dev_like']
+
+    if env  == DB_ENV['test']:
+        cfg['proxy_cur'].execute(cfg['encrypt_statement_like']['test'][0].format(plain))
+        cfg['proxy_cur'].execute(cfg['encrypt_statement_like']['test'][1])
+        rs = cfg['proxy_cur'].fetchone()
+        return rs['test_cipher'],rs['test_like']
+
+    if env  == DB_ENV['pre']:
+        cfg['proxy_cur'].execute(cfg['encrypt_statement_like']['pre'][0].format(plain))
+        cfg['proxy_cur'].execute(cfg['encrypt_statement_like']['pre'][1])
+        rs = cfg['proxy_cur'].fetchone()
+        return rs['pre_cipher'],rs['pre_like']
+
+    if env == DB_ENV['pro']:
+        cfg['proxy_cur'].execute(cfg['encrypt_statement_like']['pro'][0].format(plain))
+        cfg['proxy_cur'].execute(cfg['encrypt_statement_like']['pro'][1])
+        rs = cfg['proxy_cur'].fetchone()
+        return rs['pro_cipher'],rs['pro_like']
+
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
     cfg = get_cfg()
@@ -145,14 +170,17 @@ if __name__ == '__main__':
            print('{}={}'.format(k,v))
 
     cfg['encrypt_columns'] = get_encrypt_columns(cfg)
-
     for c in cfg['encrypt_columns']:
         c['pk_name'] = get_pk_names(cfg,c['table_schema'],c['table_name'])
         for d in get_encrypt_column_data(cfg, c):
-            u = cfg['update_encrypt_column'].format(**c)
             from_ = cfg['convert'].split('2')[0]
             to_ = cfg['convert'].split('2')[1]
             decrypt_text = db_decrypt(cfg, DB_ENV[from_], d[c['column_name']+'_cipher'])
-            s = u.format(db_encrypt(cfg, DB_ENV[to_], decrypt_text), d[c['pk_name']])
+            if c['like'] == '1':
+                u = cfg['update_encrypt_column_like'].format(**c)
+                s = u.format(*db_encrypt_like(cfg, DB_ENV[to_], decrypt_text), d[c['pk_name']])
+            else:
+                u = cfg['update_encrypt_column'].format(**c)
+                s = u.format(db_encrypt(cfg, DB_ENV[to_], decrypt_text), d[c['pk_name']])
             print(s)
             cfg['encrypt_cur'].execute(s)

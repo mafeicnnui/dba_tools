@@ -1,14 +1,6 @@
 {
-   "meta_db" : {
-      "db_ip"        : "10.2.39.18",
-      "db_port"      : "3306",
-      "db_user"      : "puppet",
-      "db_pass"      : "Puppet@123",
-      "db_service"   : "puppet",
-      "db_charset"   : "utf8"
-   },
    "proxy_db" : {
-      "db_ip"        : "10.2.39.18",
+      "db_ip"        : "172.17.158.29",
       "db_port"      : "3307",
       "db_user"      : "root",
       "db_pass"      : "root",
@@ -16,10 +8,10 @@
       "db_charset"   : "utf8"
    },
    "encrypt_db" : {
-      "db_ip"        : "10.2.39.40",
+      "db_ip"        : "172.17.158.29",
       "db_port"      : "3306",
-      "db_user"      : "root",
-      "db_pass"      : "root123HOPSON",
+      "db_user"      : "puppet",
+      "db_pass"      : "Puppet@123",
       "db_service"   : "encrypt",
       "db_charset"   : "utf8"
    },
@@ -78,7 +70,9 @@
          "select pro_cipher,pro_like from t_cipher where id=23"
        ]
    },
-   "update_encrypt_column": "UPDATE `{table_schema}`.`{table_name}` SET `{column_name}_cipher` ='{{}}' WHERE `{pk_name}` ='{{}}';",
-   "update_encrypt_column_like": "UPDATE `{table_schema}`.`{table_name}` SET `{column_name}_cipher` ='{{}}',`{column_name}_like` ='{{}}' WHERE `{pk_name}` ='{{}}';",
-   "debug"  : false
+   "update_encrypt_column": "UPDATE `{table_schema}`.`{table_name}` SET `{column_name}_cipher` = %s WHERE `{pk_name}` =%s;",
+   "update_encrypt_column_like": "UPDATE `{table_schema}`.`{table_name}` SET `{column_name}_cipher` =%s,`{column_name}_like` =%s WHERE `{pk_name}` =%s;",
+   "debug"  : false,
+   "batch_size": 10000,
+   "env": "pro"
 }

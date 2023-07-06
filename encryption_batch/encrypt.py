@@ -9,6 +9,12 @@ import json
 import pymysql
 import warnings
 import traceback
+import logging
+import datetime
+
+logging.basicConfig(filename='encrypt.log'.format(datetime.datetime.now().strftime("%Y-%m-%d")),
+                        format='[%(asctime)s-%(levelname)s:%(message)s]',
+                        level=logging.INFO, filemode='a', datefmt='%Y-%m-%d %I:%M:%S')
 
 DB_ENV = {'dev':1,'test':2,'pre':3,'pro':4}
 
@@ -77,9 +83,10 @@ def get_encrypt_column_data(cfg,c):
             from {table_schema}.{table_name} 
              where {column_name} is not null 
                and  {column_name} !=''
-                 and {column_name}_cipher is null 
-                  order by {pk_name}""".format(**c)
-    # print('get_encrypt_column_data=',st)
+                 -- and {column_name}_cipher is null 
+                  order by {pk_name} """.format(**c)
+    if cfg['debug']:
+       print('get_encrypt_column_data=',st)
     cfg['encrypt_cur'].execute(st)
     rs = cfg['encrypt_cur'].fetchall()
     return rs
@@ -104,9 +111,7 @@ def db_encrypt(cfg,env,plain):
         return rs['pre_cipher']
 
     if env == DB_ENV['pro']:
-        #print(cfg['encrypt_statement']['pro'][0].format(plain))
         cfg['proxy_cur'].execute(cfg['encrypt_statement']['pro'][0].format(plain))
-        #print(cfg['encrypt_statement']['pro'][1])
         cfg['proxy_cur'].execute(cfg['encrypt_statement']['pro'][1])
         rs = cfg['proxy_cur'].fetchone()
         return rs['pro_cipher']
@@ -168,28 +173,95 @@ if __name__ == '__main__':
         for k,v in cfg.items():
            print('{}={}'.format(k,v))
 
-    env = 'pro'
+    env = cfg['env']
     cfg['encrypt_columns'] = get_encrypt_columns(cfg)
     try:
         for c in cfg['encrypt_columns']:
             c['pk_name'] = get_pk_names(cfg,c['table_schema'],c['table_name'])
-            for d in get_encrypt_column_data(cfg, c):
-                if c['like'] =='1':
+            update_values = []
+            update_values_like = []
+            encrypt_column_data = get_encrypt_column_data(cfg, c)
+            update_rows = 0
+            for d in encrypt_column_data:
+                if c['like'] == '1':
                     u = cfg['update_encrypt_column_like'].format(**c)
-                    s = u.format(*db_encrypt_like(cfg, DB_ENV[env], format_sql(d[c['column_name']])), d[c['pk_name']])
+                    update_values_like.append(
+                        (d[c['pk_name']], *db_encrypt_like(cfg, DB_ENV[env], format_sql(d[c['column_name']]))))
                 else:
                     u = cfg['update_encrypt_column'].format(**c)
-                    # print('u=',u)
-                    # print('pk=', d[c['pk_name']])
-                    # print('encrypt=',db_encrypt(cfg, DB_ENV[env], format_sql(d[c['column_name']])))
-                    s = u.format(db_encrypt(cfg, DB_ENV[env], format_sql(d[c['column_name']])), d[c['pk_name']])
+                    update_values.append(
+                        (db_encrypt(cfg, DB_ENV[env], format_sql(d[c['column_name']])),str(d[c['pk_name']])))
 
+                if len(update_values)>0 and len(update_values) % int(cfg['batch_size']) == 0:
+                    u = cfg['update_encrypt_column'].format(**c)
+                    try:
+                        update_rows += len(update_values)
+                        cfg['encrypt_cur'].executemany(u, update_values)
+                        log = 'Table:`{}.{}`,total:{}/update:{} - {}% complete.'. \
+                            format(c['table_schema'],
+                                   c['table_name'],
+                                   str(len(encrypt_column_data)),
+                                   str(update_rows),
+                                   str(round(update_rows / len(encrypt_column_data), 4) * 100)[0:6])
+                        print('\r{}'.format(log), end='')
+                        logging.info(log)
+                        update_values = []
+                    except:
+                       traceback.print_exc()
+
+                if len(update_values_like)>0 and len(update_values_like) % int(cfg['batch_size']) == 0:
+                    u = cfg['update_encrypt_column'].format(**c)
+                    try:
+                        update_rows += len(update_values_like)
+                        cfg['encrypt_cur'].executemany(u, update_values_like)
+                        log = 'Table:`{}.{}`,total:{}/update:{} - {}% complete.'. \
+                            format(c['table_schema'],
+                                   c['table_name'],
+                                   str(len(encrypt_column_data)),
+                                   str(update_rows),
+                                   str(round(update_rows / len(encrypt_column_data), 4) * 100)[0:6])
+                        print('\r{}'.format(log), end='')
+                        logging.info(log)
+                        update_values_like = []
+                    except:
+                        traceback.print_exc()
+
+            # last batch
+            if len(update_values) > 0:
+                u = cfg['update_encrypt_column'].format(**c)
                 try:
-                   cfg['encrypt_cur'].execute(s)
+                    update_rows += len(update_values)
+                    cfg['encrypt_cur'].executemany(u, update_values)
+                    log = 'Table:`{}.{}`,total:{}/update:{} - {}% complete.'.\
+                             format(c['table_schema'],
+                                    c['table_name'],
+                                    str(len(encrypt_column_data)),
+                                    str(update_rows),
+                                    str(round(update_rows / len(encrypt_column_data), 4) * 100)[0:6])
+                    print('\r{}'.format(log),end='')
+                    logging.info(log)
+                    update_values = []
                 except:
-                   traceback.print_exc()
-                   print('error u =',u)
-                   print('error s=',s)
+                    traceback.print_exc()
+
+            if len(update_values_like)> 0:
+                u = cfg['update_encrypt_column'].format(**c)
+                try:
+                    update_rows += len(update_values_like)
+                    cfg['encrypt_cur'].executemany(u, update_values_like)
+                    log = 'Table:`{}.{}`,total:{}/update:{} - {}% complete.'. \
+                        format(c['table_schema'],
+                               c['table_name'],
+                               str(len(encrypt_column_data)),
+                               str(update_rows),
+                               str(round(update_rows / len(encrypt_column_data), 4) * 100)[0:6])
+                    print('\r{}'.format(log), end='')
+                    logging.info(log)
+                    update_values_like = []
+                except:
+                    traceback.print_exc()
+
+            print('\n')
 
     except:
         traceback.print_exc()

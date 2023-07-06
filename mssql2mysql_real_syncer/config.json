@@ -1,0 +1,14 @@
+{
+    "db_ip":"10.16.46.94",
+    "db_port":"1433",
+    "db_user":"sa",
+    "db_pass":"abcd@1234",
+    "table_schema": "test",
+    "table_name": "xs",
+    "sleep": 10,
+    "cdc_log": true,
+    "common_log": true,
+    "mysql_adapter": true,
+    "initialize": false,
+    "debug": true
+}

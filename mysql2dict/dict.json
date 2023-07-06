@@ -1,0 +1,8 @@
+{
+    "db_ip":"47.93.198.215",
+    "db_port":"3312",
+    "db_user":"root",
+    "db_pass":"root",
+    "table_schema": "information_schema",
+    "debug": true
+}
