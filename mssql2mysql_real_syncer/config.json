@@ -5,10 +5,10 @@
     "db_pass":"abcd@1234",
     "table_schema": "test",
     "table_name": "xs",
-    "sleep": 10,
-    "cdc_log": true,
-    "common_log": true,
+    "sleep": 1,
+    "cdc_log": false,
+    "common_log": false,
     "mysql_adapter": true,
     "initialize": false,
-    "debug": true
+    "debug": false
 }

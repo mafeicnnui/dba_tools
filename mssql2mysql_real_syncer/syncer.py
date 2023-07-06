@@ -324,15 +324,13 @@ order by isnull((SELECT  'Y'
 def get_data_from_tab(cfg,res):
     cr = cfg['dic_cur']
     if isinstance(res['pk_val'], int) or isinstance(res['pk_val'], float):
-       st = """select * from [{table_schema}}].dbo.[{table_name}}] where {pk_name}= {pk_val}""".format(**res)
+       st = """select * from [{table_schema}].dbo.[{table_name}] where {pk_name}= {pk_val}""".format(**res)
     else:
-       st = """select * from [{table_schema}}].dbo.[{table_name}}] where {pk_name}= '{pk_val}'""".format(**res)
+       st = """select * from [{table_schema}].dbo.[{table_name}] where {pk_name}= '{pk_val}'""".format(**res)
     cr.execute(st)
-    rs = cr.fetchall()
-    cl = []
-    for r in rs:
-        cl.append(r['name'].lower())
-    return cl
+    rs = cr.fetchone()
+    res.update(rs)
+    return res
 
 def gen_range_sql(cfg,log):
     if cfg['cdc_log']:
@@ -348,13 +346,13 @@ def gen_range_sql(cfg,log):
        res['columns'] = ','.join(["'{}'".format(i)  for i in get_tab_columns(cfg)])
        val=''
        logging.info('\033[33mfrom source table `{table_schema}.dbo.{table_name}` get data!\033[0m'.format(**cfg))
-       log = get_data_from_tab(cfg,res)
-       logging.info('get_data_from_tab log=' + json.dumps(log))
+       res = get_data_from_tab(cfg,res)
+       logging.info('get_data_from_tab log=' + json.dumps(res))
        for c in get_tab_columns(cfg):
-           if log[c] is None:
-              val = val + "'',"
+           if res[c] is None:
+              val = val + "null,"
            else:
-              val = val +"'{}',".format(log[c])
+              val = val +"'{}',".format(res[c])
 
        res['values']=val[0:-1]
        if cfg['common_log']:
@@ -370,12 +368,12 @@ def gen_range_sql(cfg,log):
         res['columns'] = get_tab_columns(cfg)
         val = []
         logging.info('\033[33mfrom source table `{}.dbo.{}` get data!\033[0m'.format(**cfg))
-        log = get_data_from_tab(cfg, res)
-        logging.info('get_data_from_tab log=' + json.dumps(log))
+        res = get_data_from_tab(cfg, res)
+        logging.info('get_data_from_tab log=' + json.dumps(res))
 
         for c in get_tab_columns(cfg):
-            res[c] = '' if log[c] is None else log[c]
-            val.append('' if log[c] is None else log[c])
+            res[c] = 'null' if res[c] is None else res[c]
+            val.append('null' if res[c] is None else res[c])
 
         res['values'] =val
         if cfg['common_log']:
@@ -391,12 +389,12 @@ def gen_range_sql(cfg,log):
         res['columns'] = get_tab_columns(cfg)
         val = []
         logging.info('\033[33mfrom source table `{}.dbo.{}` get data!\033[0m'.format(**cfg))
-        log = get_data_from_tab(cfg, res)
-        logging.info('get_data_from_tab log=' + json.dumps(log))
+        res = get_data_from_tab(cfg, res)
+        logging.info('get_data_from_tab log=' + json.dumps(res))
 
         for c in get_tab_columns(cfg):
-            res[c] = '' if log[c] is None else log[c]
-            val.append('' if log[c] is None else log[c])
+            res[c] = 'null' if res[c] is None else res[c]
+            val.append('null' if res[c] is None else res[c])
 
         res['values'] =val
         if cfg['common_log']:
@@ -546,16 +544,15 @@ def ddl_process(cfg):
       4.将日志写入队列中，每应有一条，写一次检查点
       5.退出循环，进行下一次计调度
     '''
-    logging.info('ddl_process sleep 10s....')
-    time.sleep(10)
-
+    logging.info('ddl_process please wait....')
+    time.sleep(cfg['sleep'])
     unset_table_cdc_2(cfg)
     set_table_cdc_2(cfg)
     logs = get_cdc_range_logs(cfg)
     for log in logs:
         gen_range_sql(cfg,log)
         set_ckpt(log,cfg)
-    #unset_table_cdc_2(cfg)
+    unset_table_cdc_2(cfg)
 
 def get_cdc_logs(cfg):
     cfg.update(get_ckpt())
