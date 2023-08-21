@@ -111,10 +111,10 @@ def parse_log(p_start_time = None,
     vv = ''
     cmd = ''
     if p_start_time is not None:
-        vv = vv + ' --start-datetime={}'.format(p_start_time)
+        vv = vv + " --start-datetime='{}'".format(p_start_time)
 
     if p_stop_time is not None:
-        vv = vv + ' --stop-datetime={}'.format(p_stop_time)
+        vv = vv + " --stop-datetime='{}'".format(p_stop_time)
 
     if p_start_pos is not None:
         vv = vv + ' --start-position={}'.format(p_start_pos)
