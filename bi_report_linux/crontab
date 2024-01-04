@@ -1,0 +1,26 @@
+# 各项目销售积分&运营积分（周报）、各项目运营情况（周报）
+0 6 * * 1 /home/hopson/apps/usr/webserver/dba_tools/bi_report_linux/week/week.sh week_stats.py &>/tmp/week_stats.log
+
+# 各项目POS数据（周报）
+10 6 * * 1 /home/hopson/apps/usr/webserver/dba_tools/bi_report_linux/week/week.sh week_pos.py &>/tmp/week_pos.log
+
+# 经营汇报PPT数据（周报）
+20 6 * * 1 /home/hopson/apps/usr/webserver/dba_tools/bi_report_linux/week/week.sh business_report.py &>/tmp/business_report.log
+
+# 各项目销售积分&运营积分（月报)、朝合项目运营情况（月报）
+0 7 1 * * /home/hopson/apps/usr/webserver/dba_tools/bi_report_linux/month/month.sh month_stats.py &>/tmp/month_stats.log
+
+# 各项目POS数据（月报）
+10 7 1 * * /home/hopson/apps/usr/webserver/dba_tools/bi_report_linux/month/month.sh month_pos.py &>/tmp/month_pos.log
+
+# 积分问题会员（月报）
+20 7 1 * * /home/hopson/apps/usr/webserver/dba_tools/bi_report_linux/month/month.sh month_member.py &>/tmp/month_member.log
+
+# 温江项目月度总结（月报）
+30 7 1 * * /home/hopson/apps/usr/webserver/dba_tools/bi_report_linux/month/month.sh month_108.py &>/tmp/month_108.log
+
+# 业绩上报数据（月报）
+0 8 27 * * /home/hopson/apps/usr/webserver/dba_tools/bi_report_linux/month/month.sh month_perf_report.py &>/tmp/month_perf_report.log
+
+# 朝合、温江、五角场项目关键指标（月报）
+10 8 1 * * /home/hopson/apps/usr/webserver/dba_tools/bi_report_linux/month/month.sh month_key_index.py &>/tmp/month_key_index.log

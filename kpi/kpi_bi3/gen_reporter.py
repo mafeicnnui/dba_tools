@@ -27,13 +27,15 @@ import traceback
 from email.mime.text import MIMEText
 from email.header import Header
 
+errors_sql = []
+
 def read_json(file):
     with open(file, 'r') as f:
          cfg = json.loads(f.read())
     return cfg
 
 # 读取配置文件
-cfg  = read_json('config.json')
+cfg  = read_json('./config.json')
 
 def send_mail25(p_from_user,p_from_pass,p_to_user,p_title,p_content):
     to_user=p_to_user.split(",")
@@ -108,7 +110,7 @@ def get_bbrq():
     return datetime.datetime.now().strftime("%Y-%m-%d")
 
 def get_db_dict():
-    cfg  = read_json('config.json')
+    cfg  = read_json('./config.json')
     conn = pymysql.connect(host    = cfg['db_ip'],
                            port    = int(cfg['db_port']),
                            user    = cfg['db_user'],
@@ -125,8 +127,7 @@ def get_db_from_ds(p_ds):
                            user    = p_ds['user'],
                            passwd  = p_ds['password'],
                            db      = p_ds['service'],
-                           charset ='utf8',
-                           autocommit=True)
+                           charset ='utf8')
     return conn
 
 def aes_decrypt(p_db,p_password, p_key):
@@ -186,7 +187,7 @@ def get_value(p_dbd,p_dsid,p_sql):
         val = '' if rs[0] is None  else str(rs[0])
         return val
     except:
-        traceback.print_exc()
+        errors_sql.append(p_sql)
         return ''
 
 def set_item_value(dbd,stat_sql_id,xh,val):
@@ -374,15 +375,11 @@ if __name__ == '__main__':
         print('-------------------------------------------')
         for i in get_markets(dbd,'N'):
             for s in  get_bbtj_sql(dbd,i['stat_sql_id']):
-                #if __name__ == '__main__':
-                    #print('market_id=',i['market_id'])
-                    #print('lable_id=', get_label_id(dbd, i['market_id']))
                 q = s['statement'].\
                     replace('$$BBRQQ$$',bbrqq).\
                     replace('$$BBRQZ$$',bbrqz).\
                     replace('$$MARKET_ID$$',i['market_id']).\
                     replace('$$LABEL_ID$$',str(get_label_id(dbd,i['market_id'])))
-                print('q=',q,s['dsid'])
                 v = get_value(dbd,s['dsid'],q)
                 set_item_value(dbd,s['stat_sql_id'],s['xh'],v)
                 write_item_log(dbd,i,s,q,v)
@@ -390,6 +387,12 @@ if __name__ == '__main__':
         print('write t_kpi_bbtj...')
         write_bbtj(dbd)
         print('write t_kpi_bbtj ok!')
+
+        if len(errors_sql)>0:
+            print('---------------------SQL语句执行出错-------------------------')
+            for sql in errors_sql:
+                print(sql+'\n')
+            print('------------------------------------------------------------')
     else:
         print('write t_kpi_bbtj...')
         write_bbtj(dbd)
