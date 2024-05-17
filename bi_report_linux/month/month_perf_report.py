@@ -222,7 +222,7 @@ if __name__ == '__main__':
     print('文件打包完成!')
 
     # 发送邮件及附件
-    sender = '190634@lifeat.cn,101540@cre-hopson.com,808080@cre-hopson.com,852673@cre-hopson.com'
+    sender = '190634@lifeat.cn,101540@cre-hopson.com,808080@cre-hopson.com,852673@cre-hopson.com,850646@cre-hopson.com'
     Cc = '190343@lifeat.cn,820987@cre-hopson.com'
 
     title = '合生通业绩上报数据-{}'.format(week_rq)

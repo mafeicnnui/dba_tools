@@ -97,7 +97,7 @@ def file_to_zip(path_original, path_zip):
         z.write(f, str(f)[len(path_original):])
     z.close()
 
-def get_last_week5_to_this_week4(today, weekly=0):
+def get_last_week4_to_this_week3(today, weekly=0):
     """
     :function: 获取指定日期的周一和周日的日期
     :param today: '2021-11-16'; 当前日期：today = datetime.now().strftime('%Y-%m-%d')
@@ -109,9 +109,9 @@ def get_last_week5_to_this_week4(today, weekly=0):
     today = datetime.strptime(str(today), "%Y-%m-%d")
     monday = datetime.strftime(today - timedelta(today.weekday() - last), "%Y-%m-%d")
     monday_ = datetime.strptime(monday, "%Y-%m-%d")
-    last_week5 = datetime.strftime(monday_ + timedelta(monday_.weekday() - 3), "%Y-%m-%d")
-    this_week4 = datetime.strftime(monday_ + timedelta(monday_.weekday() + 3), "%Y-%m-%d")
-    return last_week5, this_week4
+    last_week4 = datetime.strftime(monday_ + timedelta(monday_.weekday() - 4), "%Y-%m-%d")
+    this_week3 = datetime.strftime(monday_ + timedelta(monday_.weekday() + 2), "%Y-%m-%d")
+    return last_week4, this_week3
 
 def write_business_report(p_rq_start,p_rq_end,p_week_rq):
     开始日期, 结束日期, 周报日期 = p_rq_start, p_rq_end, p_week_rq
@@ -407,7 +407,7 @@ def write_business_report(p_rq_start,p_rq_end,p_week_rq):
 if __name__ == '__main__':
     output_dir = './out/经营汇报PPT数据周报/'
     os.system('rm -rf ./out/经营汇报PPT数据周报/*')
-    start_rq, end_rq = get_last_week5_to_this_week4(datetime.now().strftime('%Y-%m-%d'), 0)
+    start_rq, end_rq = get_last_week4_to_this_week3(datetime.now().strftime('%Y-%m-%d'), 0)
     week_rq = start_rq[5:7] + start_rq[8:] + '~' + end_rq[5:7] + end_rq[8:]
 
     print('经营汇报PPT数据周报:')
@@ -421,24 +421,24 @@ if __name__ == '__main__':
     write_business_report(start_rq,end_rq,week_rq)
 
     # compressed files
-    path_original = 'out/华贸会员消费数据周报'
-    path_zip = './out/华贸会员消费数据周报/华贸会员消费数据周报-{}.zip'.format(week_rq)
-    zip_name = '华贸会员消费数据周报-{}.zip'.format(week_rq)
+    path_original = 'out/经营汇报PPT数据周报'
+    path_zip = './out/经营汇报PPT数据周报/经营汇报PPT数据周报-{}.zip'.format(week_rq)
+    zip_name = '经营汇报PPT数据周报-{}.zip'.format(week_rq)
     file_to_zip(path_original, path_zip)
     print('文件打包完成!')
 
     # send mail
-    # sender = '190634@lifeat.cn,850646@cre-hopson.com'
-    # Cc = '190343@lifeat.cn,820987@cre-hopson.com'
-    sender = '190343@lifeat.cn'
-    Cc = 'zhdn_791005@163.com'
+    sender = '190634@lifeat.cn,850646@cre-hopson.com'
+    Cc = '190343@lifeat.cn,820987@cre-hopson.com'
+    # sender = '190343@lifeat.cn'
+    # Cc = 'zhdn_791005@163.com'
 
-    title = '华贸会员消费数据周报-{}'.format(week_rq)
+    title = '合生通经营汇报PPT数据周报-{}'.format(week_rq)
     content = '''各位领导：
              {}
              详见附件,请查收。
              '''.format(title)
-    os.chdir('./out/华贸会员消费数据周报')
+    os.chdir('./out/经营汇报PPT数据周报')
     file_list = [zip_name]
     ret = SendMail(sender, Cc, title, content).send(file_list)
     print(ret, type(ret))

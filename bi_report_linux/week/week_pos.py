@@ -69,7 +69,7 @@ class SendMail(object):
                 msg.attach(xlsxpart)
 
             # SMTP服务器
-            server = smtplib.SMTP_SSL("smtp.exmail.qq.com", 465,timeout=10)
+            server = smtplib.SMTP_SSL("smtp.exmail.qq.com", 465,timeout=60)
             # 登录账户
             server.login(self.sys_sender, self.sys_pwd)
             # 发送邮件

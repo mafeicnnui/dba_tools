@@ -131,7 +131,7 @@ class SendMail(object):
                 msg.attach(xlsxpart)
 
             # SMTP服务器
-            server = smtplib.SMTP_SSL("smtp.exmail.qq.com", 465,timeout=10)
+            server = smtplib.SMTP_SSL("smtp.exmail.qq.com", 465,timeout=60)
             # 登录账户
             server.login(self.sys_sender, self.sys_pwd)
             # 发送邮件
@@ -208,7 +208,7 @@ def stats_sales_points(p_rq_start,p_rq_end,p_week_rq):
     from merchant_entity.entity_store d,
     hopsonone_cms.sys_dic s,
     merchant_entity.market ma
-    where d.market_id in (218,108,237,110,132,213,164,234,278,287,306)
+    where d.market_id in (218,108,237,110,132,213,164,234,278,287,306,315)
     and d.market_id=s.market_id
     and d.floor_type=s.dic_value
     and s.type_name='floortype'
@@ -220,7 +220,7 @@ def stats_sales_points(p_rq_start,p_rq_end,p_week_rq):
     from  merchant_entity.entity_store d,
     hopsonone_cms.sys_dic s,
     merchant_entity.market ma
-    where d.market_id in (218,108,237,110,132,213,164,234,278,287,306)
+    where d.market_id in (218,108,237,110,132,213,164,234,278,287,306,315)
     and d.market_id=s.market_id
     and d.format_type=s.dic_value
     and s.type_name='operationtype'
@@ -236,7 +236,7 @@ def stats_sales_points(p_rq_start,p_rq_end,p_week_rq):
     where c.rule_id=b.id
     and b.status=0
     and bu.store_id = c.business_id
-    and b.market_id in (218,108,237,110,132,213,164,234,278,287,306)
+    and b.market_id in (218,108,237,110,132,213,164,234,278,287,306,315)
     and b.market_id=ma.id 
     GROUP BY ma.market_name,c.business_id) b1
     on d1.market_name=b1.market_name and d1.store_id=b1.business_id
@@ -253,7 +253,7 @@ def stats_sales_points(p_rq_start,p_rq_end,p_week_rq):
     merchant_entity.entity_store b,
     merchant_entity.market ma
     where a.business_id = b.store_id
-    and b.market_id in (218,108,237,110,132,213,164,234,278,287,306)
+    and b.market_id in (218,108,237,110,132,213,164,234,278,287,306,315)
     and b.market_id=ma.id
     group by ma.market_name,b.store_id) a
     on a.market_name=d1.market_name and a.store_id=d1.store_id
@@ -299,7 +299,7 @@ def stats_sales_points(p_rq_start,p_rq_end,p_week_rq):
     merchant_entity.entity_store b,
     merchant_entity.market ma
     where a.business_id=b.store_id
-    and a.market_id in (218,108,237,110,132,213,164,234,278,287,306)
+    and a.market_id in (218,108,237,110,132,213,164,234,278,287,306,315)
     and a.market_id=ma.id
     group by a.business_id) a1
     on d1.market_name=a1.market_name and d1.store_id=a1.business_id
@@ -350,7 +350,7 @@ def stats_sales_points(p_rq_start,p_rq_end,p_week_rq):
     and a.create_time<=concat(%(date_ed)s," 23:59:59")
     and a.behavior=20
     and a.consume_time is null
-    and a.market_id in (218,108,237,110,132,213,164,234,278,287,306)
+    and a.market_id in (218,108,237,110,132,213,164,234,278,287,306,315)
     group by a.market_id) pa
     where ma.id=pa.market_id
     """
@@ -359,7 +359,7 @@ def stats_sales_points(p_rq_start,p_rq_end,p_week_rq):
     销售积分运行sql用时=(销售积分运行结束时间-销售积分运行开始时间).seconds
     print(f'销售积分运行SQL时间为{销售积分运行sql用时}秒')
     # 销售积分拆分列=list(销售积分数据['项目名称'].drop_duplicates())
-    销售积分拆分列=['成都温江合生汇','上海五角场合生汇','广州海珠合生广场(南)','北京木樨园合生广场','北京合生麒麟新天地','北京朝阳合生汇','上海青浦合生新天地','广州增城合生汇','广州海珠合生新天地','西安南门合生汇','上海静安MOHO']
+    销售积分拆分列=['成都温江合生汇','上海五角场合生汇','广州海珠合生广场(南)','北京木樨园合生广场','北京合生麒麟新天地','北京朝阳合生汇','上海青浦合生新天地','广州增城合生汇','广州海珠合生新天地','西安南门合生汇','上海静安MOHO','北京超极合生汇']
     for i in 销售积分拆分列:
         销售积分新数据=销售积分数据[销售积分数据['项目名称']==i]
         if (date2 - date1).days > 10:
@@ -392,7 +392,7 @@ def stats_sales_points(p_rq_start,p_rq_end,p_week_rq):
     merchant_entity.market ma
     WHERE w.create_time>=%(date_op)s
     and w.create_time<=concat(%(date_ed)s,' 23:59:59')
-    and ma.id in (218,108,237,110,132,213,164,234,278,287,306)
+    and ma.id in (218,108,237,110,132,213,164,234,278,287,306,315)
     and locate(ma.id,w.market_id)) a,
     (select d.create_time,d.m_id,d.behavior_name,d.business_id,d.point,d.consume_amount/100 as consume_amount
     from hopsonone_point_real_time.members_points_detail d
@@ -424,7 +424,7 @@ def stats_sales_points(p_rq_start,p_rq_end,p_week_rq):
     merchant_entity.market ma
     WHERE l.mid = m.m_id
     and ma.id=m.market_id
-    and ma.id in (218,108,237,110,132,213,164,234,278,287,306)
+    and ma.id in (218,108,237,110,132,213,164,234,278,287,306,315)
     and l.create_time>=%(date_op)s
     and l.create_time<=concat(%(date_ed)s,' 23:59:59')) a,
     (select d.create_time,d.m_id,d.behavior_name,d.business_id,d.point,d.consume_amount/100 as consume_amount

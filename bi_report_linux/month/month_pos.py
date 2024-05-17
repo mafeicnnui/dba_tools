@@ -69,7 +69,7 @@ class SendMail(object):
                 msg.attach(xlsxpart)
 
             # SMTP服务器
-            server = smtplib.SMTP_SSL("smtp.exmail.qq.com", 465,timeout=10)
+            server = smtplib.SMTP_SSL("smtp.exmail.qq.com", 465,timeout=60)
             # 登录账户
             server.login(self.sys_sender, self.sys_pwd)
             # 发送邮件
@@ -354,6 +354,10 @@ if __name__ == '__main__':
     # 发送邮件及附件
     sender = '190634@lifeat.cn,548400@lifeat.cn'
     Cc = '190343@lifeat.cn,820987@cre-hopson.com'
+
+    # sender = '190343@lifeat.cn'
+    # Cc = '190343@lifeat.cn'
+
     title = '合生通POS月报-{}'.format(week_rq)
     content = '''各位领导：
           {}
