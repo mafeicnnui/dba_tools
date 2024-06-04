@@ -517,23 +517,23 @@ def stats_sales_points(p_rq_start,p_rq_end,p_week_rq):
     GROUP BY a.m_id) c 
     on p.m_id=c.m_id
     left join 
-    (select d.market_id,d.business_id,d.business_name as '商家名称',
-    d.business_berth as '铺位号',d1.dic_desc as '楼层',d2.dic_desc as '业态'
-    from merchant_entity.business d
-    left join 
-    (select s.market_id,s.dic_value,s.dic_desc
-    from hopsonone_cms.sys_dic s
-    where s.market_id=218
-    and s.type_name='floortype') d1
-    on d.market_id=d1.market_id and d.business_fool=d1.dic_value
-    left join 
-    (select s.market_id,s.dic_value,s.dic_desc
-    from hopsonone_cms.sys_dic s
-    where s.market_id=218
-    and s.type_name='operationtype') d2
-    on d.market_id=d2.market_id and d.business_type=d2.dic_value
-    where d.market_id=218
-    group by d.business_id) b 
+    (SELECT d.market_id,d.store_id AS business_id,d.store_name AS '商家名称',
+    d.store_berth  AS '铺位号',d1.dic_desc AS '楼层',d2.dic_desc AS '业态'
+    FROM merchant_entity.entity_store d
+    LEFT JOIN 
+    (SELECT s.market_id,s.dic_value,s.dic_desc
+    FROM hopsonone_cms.sys_dic s
+    WHERE s.market_id=218
+    AND s.type_name='floortype') d1
+    ON d.market_id=d1.market_id AND d.floor_type=d1.dic_value
+    LEFT JOIN 
+    (SELECT s.market_id,s.dic_value,s.dic_desc
+    FROM hopsonone_cms.sys_dic s
+    WHERE s.market_id=218
+    AND s.type_name='operationtype') d2
+    ON d.market_id=d2.market_id AND d.store_type=d2.dic_value
+    WHERE d.market_id=218
+    GROUP BY d.store_id) b 
     on p.business_id=b.business_id
     order by p.consume_time
     """
