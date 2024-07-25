@@ -106,14 +106,14 @@ def write_billing_total(p_rq_start,p_rq_end):
         billing_st.cell(r, 15).value = row['扫码付缴费金额']
         billing_st.cell(r, 16).value = row['扫码付缴费手续费']
         r = r + 1
-    billing_wb.save('./out/2024年1-3月数字账单手续费项目清单.xlsx')
+    billing_wb.save('./out/2024年4-6月数字账单手续费项目清单.xlsx')
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
     output_dir = './out/'
     os.system('rm -rf ./out/*')
-    start_rq = '2024-01-01'
-    end_rq = '2024-03-31'
+    start_rq = '2024-04-01'
+    end_rq = '2024-06-30'
     print('合生通项目组-数字账单手续费项目清单:')
     print('-----------------------------')
     print('开始日期：', start_rq)
