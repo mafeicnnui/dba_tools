@@ -826,7 +826,7 @@ if __name__ == '__main__':
     print('文件打包完成!')
 
     # send mail
-    sender = '190634@lifeat.cn,820618@cre-hopson.com'
+    sender = '190634@lifeat.cn,820618@cre-hopson.com,810461@cre-hopson.com'
     Cc = '190343@lifeat.cn,820987@cre-hopson.com'
     title = '温江项目月度总结-{}'.format(week_rq)
     content = '''各位领导：

@@ -147,7 +147,7 @@ def get_ds_mongo(mongodb_str):
 def query_point_worn_from_mongo(p_start_unixtime,p_stop_unixtime):
     db_mongo = get_ds_mongo('dds-2ze39d52c51a85f42163-pub.mongodb.rds.aliyuncs.com:3717:hopsonone_rule:hopsonone_ro:lvOD4ljLBkREapZd')
     rs_mongo = db_mongo['member_list'].aggregate([
-                {'$match':{'list_type':{'$gt':0},'update_time':{'$gt':1698768000000,'$lt':1701359999000}}},
+                {'$match':{'list_type':{'$gt':0},'update_time':{'$gt':p_start_unixtime,'$lt':p_stop_unixtime}}},
                 {'$project':{'_id':0,'m_id':1,'market_id':1,'operation_name':1,
                 'range':{'$switch':{'branches':[
                   {'case':{'$eq':["$range",1]},'then':'单店铺'},
@@ -301,7 +301,7 @@ if __name__ == '__main__':
     print('文件打包完成!')
 
     # 发送邮件及附件
-    sender = '190634@lifeat.cn,850646@cre-hopson.com,820618@cre-hopson.com,546564@hopson.com.cn'
+    sender = '190634@lifeat.cn,850646@cre-hopson.com,820618@cre-hopson.com,546564@hopson.com.cn,810461@cre-hopson.com'
     Cc = '190343@lifeat.cn,820987@cre-hopson.com'
     title = '合生通积分问题会员(月报)-{}'.format(week_rq)
     content = '''各位领导：

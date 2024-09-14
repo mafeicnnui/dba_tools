@@ -217,10 +217,11 @@ def write_item_log(dbd,i,s,q,v):
              """.format(i['item_type'],i['item_name'],i['market_id'],i['market_name'],s['stat_sql_id'],s['xh'])
         cr.execute(st)
         print('delete t_kpi_item_log {}=>{}(sql_stat_id:{}/xh={})'.format(i['market_name'],i['item_name'],s['stat_sql_id'],s['xh']))
-
+        print(st)
     st = """INSERT INTO t_kpi_item_log(item_type,item_name,market_id,market_name,stat_sql_id,xh,statement,item_value,create_time)
                 VALUES('{}','{}','{}','{}','{}','{}','{}','{}',now())
          """.format(i['item_type'],i['item_name'],i['market_id'],i['market_name'],s['stat_sql_id'],s['xh'],format_sql(q),v)
+    print(st)
     cr.execute(st)
     print('insert t_kpi_item_log {}=>{}(sql_stat_id:{}/xh={},val={})'.format(i['market_name'],i['item_name'],s['stat_sql_id'],s['xh'],v))
 

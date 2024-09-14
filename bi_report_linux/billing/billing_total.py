@@ -106,7 +106,9 @@ def write_billing_total(p_rq_start,p_rq_end):
         billing_st.cell(r, 15).value = row['扫码付缴费金额']
         billing_st.cell(r, 16).value = row['扫码付缴费手续费']
         r = r + 1
-    billing_wb.save('./out/2024年4-6月数字账单手续费项目清单.xlsx')
+    billing_wb.save('./out/{}年{}-{}月数字账单手续费项目清单.xlsx'.
+                    format(p_rq_start[0:4],str(int(p_rq_start[5:7])),str(int(p_rq_end[5:7]))))
+
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")

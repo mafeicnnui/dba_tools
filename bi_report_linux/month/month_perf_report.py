@@ -156,10 +156,10 @@ FROM
 	#销售日当天到第二天上午12点前锁定，为锁定正常
 FROM shop_side_operation_real_time.sales_report_day s,
 merchant_entity.market m
-WHERE s.market_id IN (108,110,132,164,213,218,237,234,278,287,306,327)
+WHERE s.market_id IN (108,110,132,164,213,218,237,234,278,287,306,327,315,334)
 AND s.business_id NOT IN (5403,5441,16871,21945,21956,2202248604,50166,51934,56486,77814,79369,93327,93328,93330)
-AND DATE(s.trade_date)>='{}'
-AND DATE(s.trade_date)<='{}'
+AND s.trade_date>='{}'
+AND s.trade_date<=concat('{}',' 23:59:59')
 AND s.market_id=m.id) a
 LEFT JOIN
 (SELECT
@@ -172,12 +172,12 @@ b1.apply_status
 FROM
 (SELECT b.market_id,b.store_id,b.store_name,b.store_berth,b.floor_type,b.apply_status
 FROM merchant_entity.entity_store b
-WHERE b.market_id IN (108,110,132,164,213,218,237,234,278,287,306,327)) b1
+WHERE b.market_id IN (108,110,132,164,213,218,237,234,278,287,306,327,315,334)) b1
 LEFT JOIN
 (SELECT s1.market_id,s1.dic_desc,s1.dic_value
 FROM hopsonone_cms.sys_dic s1
 WHERE s1.type_name = 'floortype'
-AND s1.market_id IN (108,110,132,164,213,218,237,234,278,287,306,327)) d
+AND s1.market_id IN (108,110,132,164,213,218,237,234,278,287,306,327,315,334)) d
 ON b1.market_id=d.market_id AND d.dic_value=b1.floor_type) b
 ON a.market_id=b.market_id AND a.business_id=b.`店铺Id`
 LEFT JOIN
@@ -202,6 +202,8 @@ if __name__ == '__main__':
     output_dir = './out/业绩上报数据/'
     os.system('rm -rf ./out/业绩上报数据/*')
     start_rq, end_rq = get_last_month26_to_this_month25()
+    # start_rq='2024-07-26'
+    # end_rq='2024-08-25'
     week_rq = start_rq[5:7] + start_rq[8:] + '~' + end_rq[5:7] + end_rq[8:]
 
     print('合生通项目组-业绩上报数据:')
@@ -222,7 +224,7 @@ if __name__ == '__main__':
     print('文件打包完成!')
 
     # 发送邮件及附件
-    sender = '190634@lifeat.cn,101540@cre-hopson.com,808080@cre-hopson.com,852673@cre-hopson.com,850646@cre-hopson.com'
+    sender = '190634@lifeat.cn,101540@cre-hopson.com,808080@cre-hopson.com,852673@cre-hopson.com,850646@cre-hopson.com,810461@cre-hopson.com,854537@cre-hopson.com'
     Cc = '190343@lifeat.cn,820987@cre-hopson.com'
 
     title = '合生通业绩上报数据-{}'.format(week_rq)

@@ -381,8 +381,8 @@ def stats_sales_points(p_rq_start,p_rq_end,p_week_rq):
     d.behavior_name as '渠道',
     date(a.create_time) as '开通时间',
     d.business_id as '商家编码',
-    b.business_name as '商家名称',
-    b.business_berth as '铺位号',
+    b.store_name as '商家名称',
+    b.store_berth as '铺位号',
     d.create_time as '积分时间',
     d.point as '积分数量',
     d.consume_amount as '消费金额'
@@ -398,12 +398,12 @@ def stats_sales_points(p_rq_start,p_rq_end,p_week_rq):
     from hopsonone_point_real_time.members_points_detail d
     where d.state = 0
     and d.behavior_name = '微信') d,
-    merchant_entity.business b
+    merchant_entity.entity_store b
     WHERE a.mid = d.m_id 
     and d.create_time>=%(date_op)s
     and d.create_time<=concat(%(date_ed)s,' 23:59:59')
     and date(a.create_time) = date(d.create_time) 
-    and d.business_id = b.business_id
+    and d.business_id = b.store_id
     group by a.mid
     union all
     SELECT
@@ -412,8 +412,8 @@ def stats_sales_points(p_rq_start,p_rq_end,p_week_rq):
     d.behavior_name as '渠道',
     date(a.create_time) as '开通时间',
     d.business_id as '商家编码',
-    b.business_name as '商家名称',
-    b.business_berth as '铺位号',
+    b.store_name as '商家名称',
+    b.store_berth as '铺位号',
     d.create_time as '积分时间',
     d.point as '积分数量',
     d.consume_amount as '消费金额'
@@ -431,12 +431,12 @@ def stats_sales_points(p_rq_start,p_rq_end,p_week_rq):
     from hopsonone_point_real_time.members_points_detail d
     where d.state = 0
     and d.behavior_name = '支付宝') d,
-    merchant_entity.business b
+    merchant_entity.entity_store b
     WHERE a.mid = d.m_id 
     and d.create_time>=%(date_op)s
     and d.create_time<=concat(%(date_ed)s,' 23:59:59')
     and date(a.create_time) = date(d.create_time) 
-    and d.business_id = b.business_id
+    and d.business_id = b.store_id
     GROUP BY a.mid
     """
     快速积分数据=pd.read_sql(快速积分sql,con=连接对象,params={'date_op':开始日期,'date_ed':结束日期})
@@ -1513,7 +1513,7 @@ if __name__ == '__main__':
     print('文件打包完成!')
 
     # 发送邮件及附件
-    sender='190634@lifeat.cn,850646@cre-hopson.com,820618@cre-hopson.com,546564@hopson.com.cn'
+    sender='190634@lifeat.cn,850646@cre-hopson.com,820618@cre-hopson.com,546564@hopson.com.cn,810461@cre-hopson.com'
     Cc = '190343@lifeat.cn,820987@cre-hopson.com'
     title='合生通运营周报-{}'.format(week_rq)
     content='''各位领导：

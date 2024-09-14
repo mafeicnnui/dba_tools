@@ -531,7 +531,7 @@ def stats_sales_points(p_rq_start,p_rq_end,p_week_rq):
     FROM hopsonone_cms.sys_dic s
     WHERE s.market_id=218
     AND s.type_name='operationtype') d2
-    ON d.market_id=d2.market_id AND d.store_type=d2.dic_value
+    ON d.market_id=d2.market_id AND d.format_type=d2.dic_value
     WHERE d.market_id=218
     GROUP BY d.store_id) b 
     on p.business_id=b.business_id
@@ -1225,7 +1225,7 @@ if __name__ == '__main__':
     print('文件打包完成!')
 
     # 发送邮件及附件
-    sender = '190634@lifeat.cn,850646@cre-hopson.com,820618@cre-hopson.com,546564@hopson.com.cn'
+    sender = '190634@lifeat.cn,850646@cre-hopson.com,820618@cre-hopson.com,546564@hopson.com.cn,810461@cre-hopson.com'
     Cc = '190343@lifeat.cn,820987@cre-hopson.com'
 
     # sender = '190343@lifeat.cn'

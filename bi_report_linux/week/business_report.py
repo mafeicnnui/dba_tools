@@ -421,24 +421,24 @@ if __name__ == '__main__':
     write_business_report(start_rq,end_rq,week_rq)
 
     # compressed files
-    path_original = 'out/华贸会员消费数据周报'
-    path_zip = './out/华贸会员消费数据周报/华贸会员消费数据周报-{}.zip'.format(week_rq)
-    zip_name = '华贸会员消费数据周报-{}.zip'.format(week_rq)
+    path_original = 'out/经营汇报PPT数据周报'
+    path_zip = './out/经营汇报PPT数据周报/经营汇报PPT数据周报-{}.zip'.format(week_rq)
+    zip_name = '经营汇报PPT数据周报-{}.zip'.format(week_rq)
     file_to_zip(path_original, path_zip)
     print('文件打包完成!')
 
     # send mail
-    # sender = '190634@lifeat.cn,850646@cre-hopson.com'
-    # Cc = '190343@lifeat.cn,820987@cre-hopson.com'
-    sender = '190343@lifeat.cn'
-    Cc = 'zhdn_791005@163.com'
+    sender = '190634@lifeat.cn,850646@cre-hopson.com,810461@cre-hopson.com'
+    Cc = '190343@lifeat.cn,820987@cre-hopson.com'
+    # sender = '190343@lifeat.cn'
+    # Cc = 'zhdn_791005@163.com'
 
-    title = '华贸会员消费数据周报-{}'.format(week_rq)
+    title = '经营汇报PPT数据周报-{}'.format(week_rq)
     content = '''各位领导：
              {}
              详见附件,请查收。
              '''.format(title)
-    os.chdir('./out/华贸会员消费数据周报')
+    os.chdir('./out/经营汇报PPT数据周报')
     file_list = [zip_name]
     ret = SendMail(sender, Cc, title, content).send(file_list)
     print(ret, type(ret))

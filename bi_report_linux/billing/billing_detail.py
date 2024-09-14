@@ -192,7 +192,12 @@ WHERE  m.id = b.`marketId`
             billing_st_dzqz.cell(r, 11).value = row2['铺位号']
             billing_st_dzqz.cell(r, 12).value = row2['单位名称']
             r = r + 1
-        billing_wb.save('./out/2024年'+row['项目名称']+'项目1季度数字账单手续费.xlsx')
+        #billing_wb.save('./out/2024年'+row['项目名称']+'项目1季度数字账单手续费.xlsx')
+        billing_wb.save('./out/{}年{}项目{}-{}月数字账单手续费.xlsx'.
+                        format(p_rq_start[0:4],
+                               row['项目名称'],
+                               str(int(p_rq_start[5:7])),
+                               str(int(p_rq_end[5:7]))))
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")

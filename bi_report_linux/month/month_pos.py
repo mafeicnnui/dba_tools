@@ -352,7 +352,7 @@ if __name__ == '__main__':
     print('文件打包完成!')
 
     # 发送邮件及附件
-    sender = '190634@lifeat.cn,548400@lifeat.cn'
+    sender = '190634@lifeat.cn,548400@lifeat.cn,810461@cre-hopson.com'
     Cc = '190343@lifeat.cn,820987@cre-hopson.com'
 
     # sender = '190343@lifeat.cn'
