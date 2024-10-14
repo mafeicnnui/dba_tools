@@ -202,8 +202,8 @@ WHERE  m.id = b.`marketId`
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
     output_dir = './out/'
-    start_rq = '2024-04-01'
-    end_rq = '2024-06-30'
+    start_rq = '2024-01-01'
+    end_rq = '2024-09-30'
     print('合生通项目组-数字账单手续费项目清单:')
     print('-----------------------------')
     print('开始日期：', start_rq)

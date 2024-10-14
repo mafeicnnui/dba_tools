@@ -62,7 +62,7 @@ async def login(item: login = Body(embed=True)):
     # 校验用户密码逻辑暂时省略, 这里我们不校验, 认为都是用户密码都是对的, 返回一个固定user_id
     user_id = get_user_id(item.user_name, item.password)
     # 使用user_id生成jwt token
-    data = {'user_id': user_id}
+    data = {'user_id': user_id,'user_name':item.user_name}
     token = create_jwt_token(data)
     return {'token': token}
 
@@ -82,7 +82,8 @@ async def test(token: str = Depends(oauth2_scheme)):
         print(f'payload: {payload}')
         # 从字典中获取user_id数据
         user_id = payload.get('user_id')
-        print(f'user_id: {user_id}')
+        user_name = payload.get('user_name')
+        print(f'user_id: {user_id},user_name={user_name}')
         # 若没有user_id, 则返回认证异常
         if not user_id:
             raise credentials_exception
@@ -91,7 +92,7 @@ async def test(token: str = Depends(oauth2_scheme)):
         # 如果解密过程出现异常, 则返回认证异常
         raise credentials_exception
     # 解密成功, 返回token中包含的user_id
-    return {'userid': user_id}
+    return {'userid': user_id,'user_name':user_name}
 
 @app.get("/user")
 def home(request: Request):

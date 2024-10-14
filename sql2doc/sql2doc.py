@@ -16,7 +16,6 @@ def get_ds_sqlserver(ip,port,service,user,password):
 
 def get_tab_rows(config,tab):
     cr = config['db'].cursor()
-    cr = config['db'].cursor()
     sql= "select count(0) from [{0}].[dbo].[{1}]".format(config['db_service'],tab)
     #print("get_tab_rows=",initialize)
     cr.execute(sql)

@@ -30,6 +30,7 @@ async def read_user_me():
 async def read_user(user_id: str):
     return {"user_id": user_id}
 
+
 @app.get("/files/{file_path:path}")
 async def read_file(file_path: str):
     return {"file_path": file_path}
